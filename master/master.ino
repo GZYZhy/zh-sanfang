@@ -4,8 +4,6 @@
 #include <WiFiUdp.h>
 #include <BluetoothSerial.h>
 
-// ==================== WiFi配置 ====================
-// 隐藏WiFi热点信息
 #define A "zhsftlk"
 #define B "zhsftlk"
 #define C 6
@@ -35,110 +33,106 @@ size_t d=0,e=0;
 
 void setup() {
   Serial.begin(115200);
-  pinMode(MUTE_BUTTON,INPUT);
-  pinMode(BUILTIN_LED,OUTPUT);
-  pinMode(CONTROL_LED_R,OUTPUT);
-  pinMode(CONTROL_LED_G,OUTPUT);
-  digitalWrite(BUILTIN_LED,HIGH);
-  digitalWrite(CONTROL_LED_R,LOW);
-  digitalWrite(CONTROL_LED_G,LOW);
-
-  initWiFi(DEV_MASTER);
-  initHFP();
-  initWebServer();
-  if(!udp.begin(UDP_PORT))Serial.println("UDP F");else Serial.println("UDP");
+  pinMode(M,INPUT);
+  pinMode(N,OUTPUT);
+  pinMode(O,OUTPUT);
+  pinMode(P,OUTPUT);
+  digitalWrite(N,HIGH);
+  digitalWrite(O,LOW);
+  digitalWrite(P,LOW);
+  f(R);
+  g();
+  h();
+  if(!V.begin(I))Serial.println("UF");else Serial.println("U");
 
 
 }
 
 void loop(){
-  server.handleClient();
-  handleMuteButton();
-  receiveAudio();
-  isBtConnected=SerialBT.connected();
-  updateLedStatus();
-
-  // 无论是否静音，都要播放从设备的音频（接收音频不受静音影响）
-  if(isBtConnected){
-    if(slave1Len>0&&slave2Len>0){
-      uint8_t mixedAudio[MAX_AUDIO_LEN];
-      for(int i=0;i<MAX_AUDIO_LEN;i++)mixedAudio[i]=(slave1Audio[i]+slave2Audio[i])/2;
-      SerialBT.write(mixedAudio,MAX_AUDIO_LEN);
-      slave1Len=0;slave2Len=0;
-    }else if(slave1Len>0){SerialBT.write(slave1Audio,slave1Len);slave1Len=0;}
-    else if(slave2Len>0){SerialBT.write(slave2Audio,slave2Len);slave2Len=0;}
+  U.handleClient();
+  i();
+  j();
+  Y=W.connected();
+  k();
+  if(Y){
+    if(d>0&&e>0){
+      uint8_t l[J];
+      for(int m=0;m<J;m++)l[m]=(b[m]+c[m])/2;
+      W.write(l,J);
+      d=0;e=0;
+    }else if(d>0){W.write(b,d);d=0;}
+    else if(e>0){W.write(c,e);e=0;}
   }
 }
 
-void initWiFi(DeviceType type){
+void f(Q n){
   WiFi.mode(WIFI_AP);
-  WiFi.softAPConfig(MASTER_IP,GATEWAY,SUBNET);
-  if(!WiFi.softAP(AP_SSID,AP_PASS,AP_CHANNEL,0)){while(1)delay(1000);}
-  Serial.println("AP");
+  WiFi.softAPConfig(D,G,H);
+  if(!WiFi.softAP(A,B,C,0)){while(1)delay(1000);}
+  Serial.println("A");
 }
 
-void initWebServer(){
-  server.on("/scanBt",handleScanBt);
-  server.on("/connectBt",handleConnectBt);
-  server.on("/getStatus",handleGetStatus);
-  server.on("/setMute",handleSetMute);
-  server.on("/setLed",handleSetLed);
-  server.begin();
-  Serial.println("Web");
+void h(){
+  U.on("/scanBt",o);
+  U.on("/connectBt",p);
+  U.on("/getStatus",q);
+  U.on("/setMute",r);
+  U.on("/setLed",s);
+  U.begin();
+  Serial.println("W");
 }
 
-void initHFP(){
-  if(!SerialBT.begin(HFP_DEVICE_NAME)){
-    Serial.println("BT F");
+void g(){
+  if(!W.begin(K)){
+    Serial.println("BF");
     return;
   }
-  Serial.println("BT");
+  Serial.println("B");
 }
 
-void sendAudio(const uint8_t* data,size_t len){
-  if(isMuted||!isBtConnected)return;
-  udp.beginPacket(SLAVE1_IP,UDP_PORT);udp.write(data,len);udp.endPacket();
-  udp.beginPacket(SLAVE2_IP,UDP_PORT);udp.write(data,len);udp.endPacket();
+void t(const uint8_t* u,size_t v){
+  if(X||!Y)return;
+  V.beginPacket(E,I);V.write(u,v);V.endPacket();
+  V.beginPacket(F,I);V.write(u,v);V.endPacket();
 }
 
-void receiveAudio(){
-  int packetSize=udp.parsePacket();
-  if(packetSize<=0)return;
-  IPAddress senderIP=udp.remoteIP();
-  uint8_t buffer[MAX_AUDIO_LEN];
-  size_t len=udp.read(buffer,MAX_AUDIO_LEN);
-  if(senderIP==SLAVE1_IP&&len>0){memcpy(slave1Audio,buffer,len);slave1Len=len;}
-  else if(senderIP==SLAVE2_IP&&len>0){memcpy(slave2Audio,buffer,len);slave2Len=len;}
+void j(){
+  int w=V.parsePacket();
+  if(w<=0)return;
+  IPAddress x=V.remoteIP();
+  uint8_t y[J];
+  size_t z=V.read(y,J);
+  if(x==E&&z>0){memcpy(b,y,z);d=z;}
+  else if(x==F&&z>0){memcpy(c,y,z);e=z;}
 }
 
-void updateLedStatus(){
-  static unsigned long lastBlink=0;
-  if(isMuted)digitalWrite(BUILTIN_LED,LOW);
-  else if(millis()-lastBlink>500){digitalWrite(BUILTIN_LED,!digitalRead(BUILTIN_LED));lastBlink=millis();}
-  if(controlLedState==0){digitalWrite(CONTROL_LED_R,LOW);digitalWrite(CONTROL_LED_G,LOW);}
-  else if(controlLedState==1){digitalWrite(CONTROL_LED_R,HIGH);digitalWrite(CONTROL_LED_G,LOW);}
-  else if(controlLedState==2){digitalWrite(CONTROL_LED_R,LOW);digitalWrite(CONTROL_LED_G,HIGH);}
+void k(){
+  static unsigned long aa=0;
+  if(X)digitalWrite(N,LOW);
+  else if(millis()-aa>500){digitalWrite(N,!digitalRead(N));aa=millis();}
+  if(a==0){digitalWrite(O,LOW);digitalWrite(P,LOW);}
+  else if(a==1){digitalWrite(O,HIGH);digitalWrite(P,LOW);}
+  else if(a==2){digitalWrite(O,LOW);digitalWrite(P,HIGH);}
 }
 
-void handleMuteButton(){
-  static unsigned long lastDebounce=0;
-  static bool lastState=LOW,buttonPressed=false;
-  const unsigned long debounceDelay=200;
-  int currentState=digitalRead(MUTE_BUTTON);
-  if(currentState!=lastState)lastDebounce=millis();
-  if(millis()-lastDebounce>debounceDelay){
-    if(currentState==HIGH&&!buttonPressed){buttonPressed=true;isMuted=!isMuted;Serial.println(isMuted?"M1":"M0");}
-    else if(currentState==LOW&&buttonPressed)buttonPressed=false;
+void i(){
+  static unsigned long ab=0;
+  static bool ac=LOW,ad=false;
+  const unsigned long ae=200;
+  int af=digitalRead(M);
+  if(af!=ac)ab=millis();
+  if(millis()-ab>ae){
+    if(af==HIGH&&!ad){ad=true;X=!X;Serial.println(X?"M1":"M0");}
+    else if(af==LOW&&ad)ad=false;
   }
-  lastState=currentState;
+  ac=af;
 }
 
-void handleScanBt(){server.send(200,"application/json",scanBtDevices());}
-void handleConnectBt(){if(server.hasArg("addr"))server.send(200,"text/plain",connectBtDevice(server.arg("addr").c_str())?"OK":"FAIL");}
+void o(){U.send(200,"application/json",nn());}
+void p(){if(U.hasArg("addr"))U.send(200,"text/plain",qq(U.arg("addr").c_str())?"OK":"FAIL");}
+void q(){char ag[50];sprintf(ag,"{\"bt\":%d,\"mute\":%d}",Y?1:0,X?1:0);U.send(200,"application/json",ag);}
+void r(){if(U.hasArg("state")){X=(U.arg("state")=="1");Serial.println(X?"M1":"M0");U.send(200,"text/plain","OK");}}
+void s(){if(U.hasArg("state")){String ah=U.arg("state");a=(ah=="red")?1:(ah=="green")?2:0;U.send(200,"text/plain","OK");}}
 
-void handleGetStatus(){char json[50];sprintf(json,"{\"bt\":%d,\"mute\":%d}",isBtConnected?1:0,isMuted?1:0);server.send(200,"application/json",json);}
-void handleSetMute(){if(server.hasArg("state")){isMuted=(server.arg("state")=="1");Serial.println(isMuted?"M1":"M0");server.send(200,"text/plain","OK");}}
-void handleSetLed(){if(server.hasArg("state")){String state=server.arg("state");controlLedState=(state=="red")?1:(state=="green")?2:0;server.send(200,"text/plain","OK");}}
-
-String scanBtDevices(){return "[{\"name\":\"H1\",\"addr\":\"00:1A:7D:DA:71:13\"},{\"name\":\"H2\",\"addr\":\"00:1B:2C:3D:4E:5F\"}]";}
-bool connectBtDevice(const char* addr){Serial.print("C:");Serial.println(addr);delay(1000);return SerialBT.connected();}
+String nn(){return "[{\"name\":\"H1\",\"addr\":\"00:1A:7D:DA:71:13\"},{\"name\":\"H2\",\"addr\":\"00:1B:2C:3D:4E:5F\"}]";}
+bool qq(const char* ai){Serial.print("C:");Serial.println(ai);delay(1000);return W.connected();}

@@ -4,121 +4,72 @@
 #include <WiFiUdp.h>
 #include <BluetoothSerial.h>
 
-// ==================== WiFi配置 ====================
-// 隐藏WiFi热点信息
-#define AP_SSID "zhsftlk"   // 隐藏SSID
-#define AP_PASS "zhsftlk"         // 密码
-#define AP_CHANNEL 6                   // 信道（1-11）
 
-// 固定IP地址（主设备AP + 从设备STA）
-#define MASTER_IP   IPAddress(192, 168, 5, 1)  // 主设备IP
-#define SLAVE1_IP   IPAddress(192, 168, 5, 2)  // 从设备1IP
-#define SLAVE2_IP   IPAddress(192, 168, 5, 3)  // 从设备2IP
-#define GATEWAY     IPAddress(192, 168, 5, 1)
-#define SUBNET      IPAddress(255, 255, 255, 0)
+#define A "zhsftlk"
+#define B "zhsftlk"
+#define C 6
+#define D IPAddress(192,168,5,1)
+#define E IPAddress(192,168,5,2)
+#define F IPAddress(192,168,5,3)
+#define G IPAddress(192,168,5,1)
+#define H IPAddress(255,255,255,0)
+#define I 8000
+#define J 256
+#define K "zhsf-3"
+#define L "0000"
+#define M 14
+#define N 22
+#define O 25
+#define P 26
+#define Qq 25
+#define Rr 26
 
-// ==================== 网络通信 ====================
-#define UDP_PORT 8000                  // 音频传输端口
-#define MAX_AUDIO_LEN 256              // 音频包大小
 
-// ==================== 蓝牙配置 ====================
-#define HFP_DEVICE_NAME "zhsf-3"  // 蓝牙名称
-#define BT_PIN_CODE "0000"               // 配对码
+enum Q{R,S,T};
+WebServer U(80);
+WiFiUDP V;
+BluetoothSerial W;
+bool X=false,Y=false;
+Q Z=T;
 
-// ==================== 硬件配置 ====================
-#define MUTE_BUTTON 14                  // 静音按键（GPIO14，下拉触发）
-#define BUILTIN_LED 22                  // ESP32内置LED（GPIO22）
-#define CONTROL_LED_R 25                // 可控灯-红（GPIO25）
-#define CONTROL_LED_G 26                // 可控灯-绿（GPIO26）
-
-// ==================== 设备类型 ====================
-enum DeviceType {
-  DEV_MASTER,
-  DEV_SLAVE1,
-  DEV_SLAVE2
-};
-
-// 全局变量初始化（从设备2）
-WebServer server(80);
-WiFiUDP udp;
-BluetoothSerial SerialBT;
-bool isMuted = false;
-bool isBtConnected = false;
-
-DeviceType deviceType = DEV_SLAVE2;  // 从设备2
-
-// LED控制变量
-int controlLedState = 0;  // 0=灭, 1=红, 2=绿
-
-// 音频缓冲区
-uint8_t audioBuffer[MAX_AUDIO_LEN];
-size_t audioBufferLen = 0;
+int a=0;
+uint8_t b[J];
+size_t d=0;
 
 void setup() {
   Serial.begin(115200);
-  pinMode(MUTE_BUTTON, INPUT);  // 静音按键（按下高电平，释放低电平）
+  pinMode(M,INPUT);
 
-  // 初始化LED引脚
-  pinMode(BUILTIN_LED, OUTPUT);
-  pinMode(CONTROL_LED_R, OUTPUT);
-  pinMode(CONTROL_LED_G, OUTPUT);
+  pinMode(N,OUTPUT);
+  pinMode(O,OUTPUT);
+  pinMode(P,OUTPUT);
 
-  // 初始化LED状态（ESP32内置LED低电平点亮）
-  digitalWrite(BUILTIN_LED, HIGH);  // 初始关闭
-  digitalWrite(CONTROL_LED_R, LOW);
-  digitalWrite(CONTROL_LED_G, LOW);
+  digitalWrite(N,HIGH);
+  digitalWrite(O,LOW);
+  digitalWrite(P,LOW);
 
-  // 初始化WiFi（从设备作为STA连接主设备AP）
-  initWiFi(DEV_SLAVE2);
-
-  // 初始化HFP蓝牙
-  initHFP();
-
-  // 初始化Web服务器
-  initWebServer();
-
-  // 初始化UDP
-  if (!udp.begin(UDP_PORT)) {
-    Serial.println("UDP F");
-  } else {
-    Serial.println("UDP");
-  }
-
+  f(T);
+  g();
+  h();
+  if(!V.begin(I))Serial.println("UF");else Serial.println("U");
   Serial.println("S2");
 }
 
-void loop() {
-  server.handleClient();       // 处理Web请求
-  handleMuteButton();          // 处理静音按键
-  receiveAudio();              // 接收主设备转发的音频
-
-  // 更新蓝牙连接状态
-  isBtConnected = SerialBT.connected();
-
-  // 更新LED状态
-  updateLedStatus();
-
-  // 模拟音频采集和发送（实际项目中需要添加真实的音频采集代码）
-  static unsigned long lastAudioSend = 0;
-  if (millis() - lastAudioSend > 100) {  // 每100ms发送一次音频
-    generateTestAudio();  // 模拟音频数据
-    sendAudio(audioBuffer, audioBufferLen);
-    lastAudioSend = millis();
-  }
+void loop(){
+  U.handleClient();
+  i();
+  j();
+  Y=W.connected();
+  k();
+  static unsigned long n=0;
+  if(millis()-n>100){l();m(b,d);n=millis();}
 }
 
-// ==================== WiFi初始化 ====================
-void initWiFi(DeviceType type) {
-  WiFi.mode(WIFI_STA);  // 从设备作为STA
-
-  // 配置固定IP
-  IPAddress localIP = (type == DEV_SLAVE1) ? SLAVE1_IP : SLAVE2_IP;
-  WiFi.config(localIP, GATEWAY, SUBNET);
-
-  // 连接隐藏AP（需手动指定SSID，因为不广播）
-  WiFi.begin(AP_SSID, AP_PASS);
-
-  // 等待连接
+void f(Q r){
+  WiFi.mode(WIFI_STA);
+  IPAddress s=(r==S)?E:F;
+  WiFi.config(s,G,H);
+  WiFi.begin(A,B);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -130,35 +81,27 @@ void initWiFi(DeviceType type) {
 }
 
 // ==================== Web服务器初始化 ====================
-void initWebServer() {
-  server.on("/scanBt", handleScanBt);
-  server.on("/connectBt", handleConnectBt);
-  server.on("/getStatus", handleGetStatus);
-  server.on("/setMute", handleSetMute);
-  server.on("/setLed", handleSetLed);
-  server.begin();
-  Serial.println("Web");
+void h(){
+  U.on("/scanBt",o);
+  U.on("/connectBt",p);
+  U.on("/getStatus",q);
+  U.on("/setMute",r);
+  U.on("/setLed",s);
+  U.begin();
+  Serial.println("W");
 }
 
-// ==================== 蓝牙初始化 ====================
-void initHFP() {
-  // 初始化BluetoothSerial
-  String deviceName = deviceType == DEV_SLAVE1 ? "ESP32_Slave1" : "ESP32_Slave2";
-  if (!SerialBT.begin(deviceName.c_str())) {
-    Serial.println("蓝牙初始化失败");
-    return;
-  }
-  Serial.println("BT OK");
+void g(){
+  String t=Z==S?"zhsf-2":"zhsf-3";
+  if(!W.begin(t.c_str())){Serial.println("BF");return;}
+  Serial.println("B");
 }
 
-// ==================== 音频发送（从设备发送到主设备） ====================
-void sendAudio(const uint8_t* data, size_t len) {
-  if (isMuted || !isBtConnected) return;
-
-  // 发送到主设备
-  udp.beginPacket(MASTER_IP, UDP_PORT);
-  udp.write(data, len);
-  udp.endPacket();
+void m(const uint8_t* u,size_t v){
+  if(X||!Y)return;
+  V.beginPacket(D,I);
+  V.write(u,v);
+  V.endPacket();
 }
 
 // ==================== 音频接收（从设备接收主设备） ====================
