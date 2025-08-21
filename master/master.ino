@@ -32,7 +32,7 @@ uint8_t b[J]={0},c[J]={0};
 size_t d=0,e=0;
 
 void setup() {
-  Serial.begin(115200);
+
   pinMode(M,INPUT);
   pinMode(N,OUTPUT);
   pinMode(O,OUTPUT);
@@ -43,7 +43,7 @@ void setup() {
   f(R);
   g();
   h();
-  if(!V.begin(I))Serial.println("UF");else Serial.println("U");
+
 
 
 }
@@ -69,7 +69,7 @@ void f(Q n){
   WiFi.mode(WIFI_AP);
   WiFi.softAPConfig(D,G,H);
   if(!WiFi.softAP(A,B,C,0)){while(1)delay(1000);}
-  Serial.println("A");
+
 }
 
 void h(){
@@ -79,15 +79,11 @@ void h(){
   U.on("/setMute",r);
   U.on("/setLed",s);
   U.begin();
-  Serial.println("W");
+
 }
 
 void g(){
-  if(!W.begin(K)){
-    Serial.println("BF");
-    return;
-  }
-  Serial.println("B");
+  if(!W.begin(K))return;
 }
 
 void t(const uint8_t* u,size_t v){
@@ -122,7 +118,7 @@ void i(){
   int af=digitalRead(M);
   if(af!=ac)ab=millis();
   if(millis()-ab>ae){
-    if(af==HIGH&&!ad){ad=true;X=!X;Serial.println(X?"M1":"M0");}
+    if(af==HIGH&&!ad){ad=true;X=!X;}
     else if(af==LOW&&ad)ad=false;
   }
   ac=af;
@@ -131,8 +127,8 @@ void i(){
 void o(){U.send(200,"application/json",nn());}
 void p(){if(U.hasArg("addr"))U.send(200,"text/plain",qq(U.arg("addr").c_str())?"OK":"FAIL");}
 void q(){char ag[50];sprintf(ag,"{\"bt\":%d,\"mute\":%d}",Y?1:0,X?1:0);U.send(200,"application/json",ag);}
-void r(){if(U.hasArg("state")){X=(U.arg("state")=="1");Serial.println(X?"M1":"M0");U.send(200,"text/plain","OK");}}
+void r(){if(U.hasArg("state")){X=(U.arg("state")=="1");U.send(200,"text/plain","OK");}}
 void s(){if(U.hasArg("state")){String ah=U.arg("state");a=(ah=="red")?1:(ah=="green")?2:0;U.send(200,"text/plain","OK");}}
 
 String nn(){return "[{\"name\":\"H1\",\"addr\":\"00:1A:7D:DA:71:13\"},{\"name\":\"H2\",\"addr\":\"00:1B:2C:3D:4E:5F\"}]";}
-bool qq(const char* ai){Serial.print("C:");Serial.println(ai);delay(1000);return W.connected();}
+bool qq(const char* ai){delay(1000);return W.connected();}

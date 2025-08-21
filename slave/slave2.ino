@@ -37,7 +37,7 @@ uint8_t b[J];
 size_t d=0;
 
 void setup() {
-  Serial.begin(115200);
+
   pinMode(M,INPUT);
 
   pinMode(N,OUTPUT);
@@ -51,8 +51,7 @@ void setup() {
   f(T);
   g();
   h();
-  if(!V.begin(I))Serial.println("UF");else Serial.println("U");
-  Serial.println("S2");
+
 }
 
 void loop(){
@@ -70,14 +69,7 @@ void f(Q r){
   IPAddress s=(r==S)?E:F;
   WiFi.config(s,G,H);
   WiFi.begin(A,B);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
 
-  Serial.println("");
-  Serial.print("从设备IP: ");
-  Serial.println(WiFi.localIP());
 }
 
 // ==================== Web服务器初始化 ====================
@@ -88,13 +80,12 @@ void h(){
   U.on("/setMute",r);
   U.on("/setLed",s);
   U.begin();
-  Serial.println("W");
+
 }
 
 void g(){
   String t=Z==S?"zhsf-2":"zhsf-3";
-  if(!W.begin(t.c_str())){Serial.println("BF");return;}
-  Serial.println("B");
+  if(!W.begin(t.c_str()))return;
 }
 
 void m(const uint8_t* u,size_t v){
@@ -153,7 +144,7 @@ void handleMuteButton() {
       // 按键按下（高电平），切换静音状态
       buttonPressed = true;
       isMuted = !isMuted;
-      Serial.println(isMuted ? "M1" : "M0");
+
     } else if (currentState == LOW && buttonPressed) {
       // 按键释放（低电平），重置按键状态
       buttonPressed = false;
@@ -192,7 +183,7 @@ void handleSetMute() {
   if (server.hasArg("state")) {
     String state = server.arg("state");
     isMuted = (state == "1");
-    Serial.println(isMuted ? "M1" : "M0");
+
     server.send(200, "text/plain", "OK");
   }
 }
@@ -203,8 +194,8 @@ String scanBtDevices() {
 }
 
 bool connectBtDevice(const char* addr) {
-  Serial.print("C:");
-  Serial.println(addr);
+
+
   delay(1000);
   return SerialBT.connected();
 }

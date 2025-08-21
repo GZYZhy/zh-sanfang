@@ -36,7 +36,7 @@ uint8_t b[J];
 size_t d=0;
 
 void setup() {
-  Serial.begin(115200);
+
   pinMode(M,INPUT);
   pinMode(N,OUTPUT);
   pinMode(O,OUTPUT);
@@ -47,9 +47,7 @@ void setup() {
   f(S);
   g();
   h();
-  if(!V.begin(I))Serial.println("UF");else Serial.println("U");
 
-  Serial.println("S1");
 }
 
 void loop(){
@@ -67,10 +65,7 @@ void f(Q r){
   IPAddress s=(r==S)?E:F;
   WiFi.config(s,G,H);
   WiFi.begin(A,B);
-  while(WiFi.status()!=WL_CONNECTED){delay(500);Serial.print(".");}
-  Serial.println("");
-  Serial.print("IP:");
-  Serial.println(WiFi.localIP());
+
 }
 
 void h(){
@@ -80,13 +75,12 @@ void h(){
   U.on("/setMute",r);
   U.on("/setLed",s);
   U.begin();
-  Serial.println("W");
+
 }
 
 void g(){
   String t=Z==S?"zhsf-2":"zhsf-3";
-  if(!W.begin(t.c_str())){Serial.println("BF");return;}
-  Serial.println("B");
+  if(!W.begin(t.c_str()))return;
 }
 
 void m(const uint8_t* u,size_t v){
@@ -135,7 +129,7 @@ void i(){
   int ag=digitalRead(M);
   if(ag!=ad)ac=millis();
   if(millis()-ac>af){
-    if(ag==HIGH&&!ae){ae=true;X=!X;Serial.println(X?"M1":"M0");}
+    if(ag==HIGH&&!ae){ae=true;X=!X;}
     else if(ag==LOW&&ae)ae=false;
   }
   ad=ag;
@@ -154,9 +148,9 @@ void p(){
   }else U.send(200,"text/plain","FAIL");
 }
 void q(){char aj[50];sprintf(aj,"{\"bt\":%d,\"mute\":%d}",Y?1:0,X?1:0);U.send(200,"application/json",aj);}
-void r(){if(U.hasArg("state")){String ak=U.arg("state");X=(ak=="1");Serial.println(X?"M1":"M0");U.send(200,"text/plain","OK");}else U.send(200,"text/plain","FAIL");}
+void r(){if(U.hasArg("state")){String ak=U.arg("state");X=(ak=="1");U.send(200,"text/plain","OK");}else U.send(200,"text/plain","FAIL");}
 void s(){if(U.hasArg("state")){String al=U.arg("state");a=(al=="red")?1:(al=="green")?2:0;U.send(200,"text/plain","OK");}else U.send(200,"text/plain","FAIL");}
 
 // 蓝牙工具函数
 String nn(){return "[{\"name\":\"H1\",\"addr\":\"00:1A:7D:DA:71:13\"},{\"name\":\"H2\",\"addr\":\"00:1B:2C:3D:4E:5F\"}]";}
-bool qq(const char* am){Serial.print("C:");Serial.println(am);delay(1000);return W.connected();}
+bool qq(const char* am){delay(1000);return W.connected();}
