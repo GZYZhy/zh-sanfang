@@ -22,7 +22,7 @@
 #define MAX_AUDIO_LEN 256              // 音频包大小
 
 // ==================== 蓝牙配置 ====================
-#define HFP_DEVICE_NAME "zhsf-2"  // 蓝牙名称
+#define HFP_DEVICE_NAME "zhsf-3"  // 蓝牙名称
 #define BT_PIN_CODE "0000"               // 配对码
 
 // ==================== 硬件配置 ====================
@@ -38,29 +38,38 @@ enum DeviceType {
   DEV_SLAVE2
 };
 
-// 全局变量初始化（从设备1）
+// 全局变量初始化（从设备2）
 WebServer server(80);
 WiFiUDP udp;
 BluetoothSerial SerialBT;
-bool isMuted=false,isBtConnected=false;
-DeviceType deviceType=DEV_SLAVE1;
-int controlLedState=0;
+bool isMuted = false;
+bool isBtConnected = false;
 
+DeviceType deviceType = DEV_SLAVE2;  // 从设备2
+
+// LED控制变量
+int controlLedState = 0;  // 0=灭, 1=红, 2=绿
+
+// 音频缓冲区
 uint8_t audioBuffer[MAX_AUDIO_LEN];
-size_t audioBufferLen=0;
+size_t audioBufferLen = 0;
 
 void setup() {
   Serial.begin(115200);
-  pinMode(MUTE_BUTTON,INPUT);
-  pinMode(BUILTIN_LED,OUTPUT);
-  pinMode(CONTROL_LED_R,OUTPUT);
-  pinMode(CONTROL_LED_G,OUTPUT);
-  digitalWrite(BUILTIN_LED,HIGH);
-  digitalWrite(CONTROL_LED_R,LOW);
-  digitalWrite(CONTROL_LED_G,LOW);
+  pinMode(MUTE_BUTTON, INPUT);  // 静音按键（按下高电平，释放低电平）
+
+  // 初始化LED引脚
+  pinMode(BUILTIN_LED, OUTPUT);
+  pinMode(CONTROL_LED_R, OUTPUT);
+  pinMode(CONTROL_LED_G, OUTPUT);
+
+  // 初始化LED状态（ESP32内置LED低电平点亮）
+  digitalWrite(BUILTIN_LED, HIGH);  // 初始关闭
+  digitalWrite(CONTROL_LED_R, LOW);
+  digitalWrite(CONTROL_LED_G, LOW);
 
   // 初始化WiFi（从设备作为STA连接主设备AP）
-  initWiFi(DEV_SLAVE1);
+  initWiFi(DEV_SLAVE2);
 
   // 初始化HFP蓝牙
   initHFP();
@@ -75,7 +84,7 @@ void setup() {
     Serial.println("UDP");
   }
 
-  Serial.println("S1");
+  Serial.println("S2");
 }
 
 void loop() {
@@ -171,43 +180,15 @@ void receiveAudio() {
 
 // ==================== 模拟音频生成 ====================
 void generateTestAudio() {
-  // 生成简单的测试音频数据（正弦波）
+  // 生成简单的测试音频数据（正弦波，频率稍有不同以便区分设备）
   static int phase = 0;
   audioBufferLen = MAX_AUDIO_LEN;
 
   for (int i = 0; i < MAX_AUDIO_LEN; i++) {
-    // 生成800Hz的正弦波
-    audioBuffer[i] = 128 + 127 * sin(2 * PI * 800 * phase / 8000.0);
+    // 生成1000Hz的正弦波（与从设备1的800Hz不同）
+    audioBuffer[i] = 128 + 127 * sin(2 * PI * 1000 * phase / 8000.0);
     phase++;
     if (phase >= 8000) phase = 0;
-  }
-}
-
-// ==================== LED状态更新 ====================
-void updateLedStatus() {
-  // 静音状态指示灯
-  if (isMuted) {
-    digitalWrite(STATUS_LED_R, HIGH);  // 红色 - 静音
-    digitalWrite(STATUS_LED_G, LOW);
-  } else {
-    digitalWrite(STATUS_LED_R, LOW);
-    digitalWrite(STATUS_LED_G, HIGH);  // 绿色 - 非静音
-  }
-
-  // 可控LED状态
-  switch (controlLedState) {
-    case 0:  // 灭
-      digitalWrite(CONTROL_LED_R, LOW);
-      digitalWrite(CONTROL_LED_G, LOW);
-      break;
-    case 1:  // 红
-      digitalWrite(CONTROL_LED_R, HIGH);
-      digitalWrite(CONTROL_LED_G, LOW);
-      break;
-    case 2:  // 绿
-      digitalWrite(CONTROL_LED_R, LOW);
-      digitalWrite(CONTROL_LED_G, HIGH);
-      break;
   }
 }
 
@@ -242,7 +223,6 @@ void handleMuteButton() {
 // ==================== Web回调函数 ====================
 // 纯JSON API，无HTML界面
 
-// 以下Web回调函数与主设备相同
 void handleScanBt() {
   String devices = scanBtDevices();
   server.send(200, "application/json", devices);
@@ -271,19 +251,6 @@ void handleSetMute() {
     isMuted = (state == "1");
     Serial.println(isMuted ? "M1" : "M0");
     server.send(200, "text/plain", "OK");
-  } else {
-    server.send(400, "text/plain", "miss state");
-  }
-}
-
-// 设置LED状态
-void handleSetLed() {
-  if (server.hasArg("state")) {
-    String state = server.arg("state");
-    controlLedState = (state == "red") ? 1 : (state == "green") ? 2 : 0;
-    server.send(200, "text/plain", "OK");
-  } else {
-    server.send(400, "text/plain", "缺少state参数");
   }
 }
 
@@ -297,4 +264,52 @@ bool connectBtDevice(const char* addr) {
   Serial.println(addr);
   delay(1000);
   return SerialBT.connected();
+}
+
+// ==================== LED状态更新 ====================
+void updateLedStatus() {
+  // 静音状态指示灯（内置LED）
+  static unsigned long lastBlink = 0;
+  if (isMuted) {
+    digitalWrite(BUILTIN_LED, LOW);  // 常亮 - 静音
+  } else {
+    // 闪烁 - 讲话中
+    if (millis() - lastBlink > 500) {
+      digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED));
+      lastBlink = millis();
+    }
+  }
+
+  // 可控LED状态
+  switch (controlLedState) {
+    case 0:  // 灭
+      digitalWrite(CONTROL_LED_R, LOW);
+      digitalWrite(CONTROL_LED_G, LOW);
+      break;
+    case 1:  // 红
+      digitalWrite(CONTROL_LED_R, HIGH);
+      digitalWrite(CONTROL_LED_G, LOW);
+      break;
+    case 2:  // 绿
+      digitalWrite(CONTROL_LED_R, LOW);
+      digitalWrite(CONTROL_LED_G, HIGH);
+      break;
+  }
+}
+
+// 设置LED状态
+void handleSetLed() {
+  if (server.hasArg("state")) {
+    String state = server.arg("state");
+    if (state == "off") {
+      controlLedState = 0;
+      server.send(200, "text/plain", "OK");
+    } else if (state == "red") {
+      controlLedState = 1;
+      server.send(200, "text/plain", "OK");
+    } else if (state == "green") {
+      controlLedState = 2;
+      server.send(200, "text/plain", "OK");
+    }
+  }
 }
