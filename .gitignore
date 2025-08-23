@@ -1,5 +1,8 @@
 # Prerequisites
 *.d
+.DS_Store
+._*
+.Spotlight-V100
 
 # Object files
 *.o
