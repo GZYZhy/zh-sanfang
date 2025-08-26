@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include <driver/i2s.h>
 
-#define BTN 0
+#define BTN 12  // 外接按键使用GPIO12，内部上拉
 #define LED 2
 #define SAMPLE_RATE 16000
 
