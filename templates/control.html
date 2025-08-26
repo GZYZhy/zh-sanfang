@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>综合控制台</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .section { background: white; padding: 20px; margin: 20px 0; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        .control-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, button { padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid #ddd; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .quick-controls { display: flex; gap: 10px; margin: 10px 0; }
+        .quick-btn { padding: 8px 15px; }
+        .btn-off { background: #6c757d; }
+        .btn-green { background: #28a745; }
+        .btn-yellow { background: #ffc107; color: black; }
+        .btn-red { background: #dc3545; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; display: none; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .nav { display: flex; gap: 20px; margin-bottom: 20px; }
+        .nav a { padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+        .nav a:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>综合控制台</h1>
+        
+        <div class="nav">
+            <a href="/ctrl/tally">RGB灯控制</a>
+            <a href="/ctrl/listen">音频监听</a>
+        </div>
+
+        <div class="section">
+            <h2>RGB灯控制</h2>
+            
+            <div class="control-group">
+                <label for="deviceSelect">选择设备:</label>
+                <select id="deviceSelect">
+                    <option value="zhsf_1">zhsf_1</option>
+                    <option value="zhsf_2">zhsf_2</option>
+                    <option value="zhsf_3">zhsf_3</option>
+                </select>
+            </div>
+
+            <div class="quick-controls">
+                <button class="quick-btn btn-off" onclick="controlRGB('0')">关闭</button>
+                <button class="quick-btn btn-green" onclick="controlRGB('1')">绿色</button>
+                <button class="quick-btn btn-yellow" onclick="controlRGB('3')">黄色</button>
+                <button class="quick-btn btn-red" onclick="controlRGB('5')">红色</button>
+            </div>
+
+            <div class="control-group">
+                <label for="modeSelect">选择模式:</label>
+                <select id="modeSelect">
+                    <option value="0">0 - 关闭所有灯</option>
+                    <option value="1" selected>1 - 绿色常亮（默认）</option>
+                    <option value="2">2 - 黄色闪烁</option>
+                    <option value="3">3 - 黄色常亮</option>
+                    <option value="4">4 - 红色闪烁</option>
+                    <option value="5">5 - 红色常亮</option>
+                    <option value="6">6 - 红蓝交替闪烁</option>
+                </select>
+            </div>
+
+            <button onclick="sendRGBControl()">发送控制指令</button>
+
+            <div id="rgbStatus" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        // RGB控制功能
+        async function controlRGB(mode) {
+            document.getElementById('modeSelect').value = mode;
+            await sendRGBControl();
+        }
+
+        async function sendRGBControl() {
+            const device = document.getElementById('deviceSelect').value;
+            const mode = document.getElementById('modeSelect').value;
+            
+            const statusDiv = document.getElementById('rgbStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'status';
+            statusDiv.textContent = '发送中...';
+            
+            try {
+                const response = await fetch('/ctrl/api/rgb/control', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ device, mode })
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    statusDiv.className = 'status success';
+                } else {
+                    statusDiv.className = 'status error';
+                }
+                statusDiv.textContent = result.message;
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '网络错误: ' + error.message;
+            }
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
