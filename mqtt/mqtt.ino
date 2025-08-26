@@ -84,14 +84,9 @@ void loop(void)
     if(recOver)
     {
       recOver=0;
-      if(digitalRead(LED))//接受数据时闪烁LED
-      {
-          digitalWrite(LED,HIGH);
-      }
-      else
-      {
-          digitalWrite(LED,LOW);
-      }
+      digitalWrite(LED, LOW); // 接收到消息时点亮LED
+      delay(100); // 短暂点亮
+      digitalWrite(LED, HIGH); // 然后熄灭，实现闪烁效果
     }
     else
     {

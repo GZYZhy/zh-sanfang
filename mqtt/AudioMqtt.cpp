@@ -1,4 +1,8 @@
 #include "AudioMqtt.h"
+#include <Arduino.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <string.h>
 
 extern const char* DEVICE_ID;
 extern const char* LIGHT_CONTROL_TOPIC;
@@ -7,6 +11,10 @@ extern const char* mqtt_password;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+int min(int a, int b) {
+  return (a < b) ? a : b;
+}
 
 void handleLightControl(const char* payload, unsigned int length) {
   if (length < 3) return; // 最小格式: id:mode
@@ -32,9 +40,12 @@ void handleLightControl(const char* payload, unsigned int length) {
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
-  Serial.print("] ");
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
+  Serial.print("] length: ");
+  Serial.print(length);
+  Serial.print(" bytes, first few bytes: ");
+  for (int i = 0; i < min(5, length); i++) {
+    Serial.print(payload[i]);
+    Serial.print(" ");
   }
   Serial.println();
 
@@ -65,6 +76,8 @@ void reconnect() {
       // ... and resubscribe
       client.subscribe(LOCALTOPIC,0);
       client.subscribe(LIGHT_CONTROL_TOPIC,0);
+      Serial.print("Subscribed to audio topic: ");
+      Serial.println(LOCALTOPIC);
       Serial.print("Subscribed to light control topic: ");
       Serial.println(LIGHT_CONTROL_TOPIC);
     } else {
