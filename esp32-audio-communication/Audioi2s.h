@@ -7,6 +7,9 @@
 
 #define BTN 12  // 外接按键使用GPIO12，内部上拉
 #define LED 2
+#define RGB_R 25  // RGB红灯引脚
+#define RGB_G 26  // RGB绿灯引脚
+#define RGB_B 27  // RGB蓝灯引脚
 #define SAMPLE_RATE 16000
 
 #define CHECK(err)   if (err != ESP_OK) {Serial.printf("Failed installing driver: %d\n", err);while (true);}
