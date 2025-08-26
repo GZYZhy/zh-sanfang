@@ -4,6 +4,8 @@
 #include <PubSubClient.h>
 #include <WiFi.h>
 #include "IISAudio.h"
+#include "RGBLight.h"
+
 extern PubSubClient client;
 
 #if 0
@@ -18,8 +20,14 @@ extern PubSubClient client;
 
 #endif
 
+extern const char* DEVICE_ID;
+extern const char* LIGHT_CONTROL_TOPIC;
+extern const char* mqtt_user;
+extern const char* mqtt_password;
+
 void callback(char* topic, byte* payload, unsigned int length);
 void reconnect() ;
 void sendData(const uint8_t  *data, uint16_t len);
+void handleLightControl(const char* payload, unsigned int length);
 
 #endif

@@ -2,9 +2,17 @@
 #include <PubSubClient.h>
 #include "AudioMqtt.h"
 #include "IISAudio.h"
+#include "RGBLight.h"
+
 const char* ssid     = "zhy8zxm";//修改为你的WIFI账号与密码
 const char* password = "zhy3976878";
 const char* mqtt_server = "24.233.0.55";//这是树莓的MQTT服务器地址
+
+// MQTT配置参数 - 在主程序中定义
+const char* DEVICE_ID = "zhsf_1";
+const char* LIGHT_CONTROL_TOPIC = "zhsf/tally";
+const char* mqtt_user = "esptalk";
+const char* mqtt_password = "zhsanfang";
 
 void wifiInit(void)//连接WIFI
 {
@@ -40,6 +48,9 @@ void setup(void)
   pinMode(LED, OUTPUT);//指示灯
   digitalWrite(LED,LOW);
   
+  RGBLightInit(); // 初始化RGB灯
+  Serial.println("RGBLight initialized!");
+  
   client.setServer(mqtt_server, 1883);//mqtt配置
   client.setCallback(callback);//绑定回调函数
 }
@@ -55,6 +66,9 @@ void loop(void)
     reconnect();
   }
   client.loop();
+  
+  updateLight(); // 更新RGB灯状态（处理闪烁等效果）
+  
   if(BtnisPressed())//按下按键发射数据
   {
     speakOut=0;
