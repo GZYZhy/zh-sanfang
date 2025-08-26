@@ -2,9 +2,9 @@
 #include <PubSubClient.h>
 #include "AudioMqtt.h"
 #include "IISAudio.h"
-const char* ssid     = "BeeBest";//修改为你的WIFI账号与密码
-const char* password = "fengyu0715";
-const char* mqtt_server = "124.223.103.23";//这是树莓的MQTT服务器地址
+const char* ssid     = "zhy8zxm";//修改为你的WIFI账号与密码
+const char* password = "zhy3976878";
+const char* mqtt_server = "24.233.0.55";//这是树莓的MQTT服务器地址
 
 void wifiInit(void)//连接WIFI
 {
@@ -38,7 +38,7 @@ void setup(void)
 
   pinMode(BTN, INPUT_PULLUP);//按键
   pinMode(LED, OUTPUT);//指示灯
-  digitalWrite(LED,HIGH);
+  digitalWrite(LED,LOW);
   
   client.setServer(mqtt_server, 1883);//mqtt配置
   client.setCallback(callback);//绑定回调函数
@@ -58,7 +58,7 @@ void loop(void)
   if(BtnisPressed())//按下按键发射数据
   {
     speakOut=0;
-    digitalWrite(LED,HIGH);//发射时开灯
+    digitalWrite(LED,LOW);//发射时开灯
     int samples_read = I2Sread(samples_16bit,128);//读取数据
     covert_bit(samples_16bit,samples_8bit,samples_read);//发送时转换为8位
     sendData(samples_8bit,samples_read);//发射数据
@@ -72,16 +72,16 @@ void loop(void)
       recOver=0;
       if(digitalRead(LED))//接受数据时闪烁LED
       {
-          digitalWrite(LED,LOW);
+          digitalWrite(LED,HIGH);
       }
       else
       {
-          digitalWrite(LED,HIGH);
+          digitalWrite(LED,LOW);
       }
     }
     else
     {
-      digitalWrite(LED,LOW);//没有接收到消息，也没有发射，关灯
+      digitalWrite(LED,HIGH);//没有接收到消息，也没有发射，关灯
       i2s_zero_dma_buffer(SPK_I2S_PORT);//清空DMA中缓存的数据，你可以尝试一下不清空（注释这行）是什么效果
     }
   }  

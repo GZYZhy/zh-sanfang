@@ -6,7 +6,7 @@
 #include <driver/i2s.h>
 
 #define BTN 0
-#define LED 2
+#define LED 22
 #define SAMPLE_RATE 16000
 
 #define CHECK(err)   if (err != ESP_OK) {Serial.printf("Failed installing driver: %d\n", err);while (true);}

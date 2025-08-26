@@ -1,15 +1,18 @@
 #include "AudioMqtt.h"
 
+const char* mqtt_user = "esptalk";
+const char* mqtt_password = "zhsanfang";
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 
 void callback(char* topic, byte* payload, unsigned int length) {
-//  Serial.print("Message arrived [");
-//  Serial.print(topic);
-//  Serial.print("] ");
-//  for (int i = 0; i < length; i++) {
-//    Serial.print((char)payload[i]);
-//  }
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
 
   for (int i = 0; i < length; i++)//接收到信息后转换为16bit，补充左右声道，写入到I2S
   {
@@ -27,7 +30,7 @@ void reconnect() {
     // Create a random client ID
     String clientId = "ESP32Client-";
     clientId += String(random(0xffff), HEX);
-    if (client.connect(clientId.c_str())) {
+    if (client.connect(clientId.c_str(), mqtt_user, mqtt_password)) {
       Serial.println("connected");
       // Once connected, publish an announcement...
       // ... and resubscribe
