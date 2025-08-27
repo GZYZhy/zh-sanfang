@@ -4,8 +4,8 @@
 #include "IISAudio.h"
 #include "RGBLight.h"
 
-const char* ssid     = "zhy8zxm";//修改为你的WIFI账号与密码
-const char* password = "zhy3976878";
+const char* ssid     = "Netcore-9E40DE";//修改为你的WIFI账号与密码
+const char* password = "13400243126ybz";
 const char* mqtt_server = "24.233.0.55";//这是树莓的MQTT服务器地址
 
 // MQTT配置参数 - 在主程序中定义
@@ -13,6 +13,15 @@ const char* DEVICE_ID = "zhsf_1";
 const char* LIGHT_CONTROL_TOPIC = "zhsf/tally";
 const char* mqtt_user = "esptalk";
 const char* mqtt_password = "zhsanfang";
+
+bool buttonState;          // 当前按键状态
+bool lastButtonState = HIGH; // 上一次按键状态
+bool debouncedState = HIGH;  // 消抖后的按键状态
+#define debounceDelay  50// 消抖时间间隔（毫秒）
+
+// 计时变量
+unsigned long lastDebounceTime = 0;
+
 
 void wifiInit(void)//连接WIFI
 {
@@ -26,16 +35,33 @@ void wifiInit(void)//连接WIFI
 }
 bool  BtnisPressed(void)//按键是否按下
 {
-  bool key=digitalRead(BTN);
-  if(1==key)
-  {
-    return 0;
+  int reading = digitalRead(BTN);
+  
+  // 检查状态是否变化（由于噪声或按下）
+  if (reading != lastButtonState) {
+    // 重置消抖计时器
+    lastDebounceTime = millis();
   }
-  else
-  {
-    return 1 ;
+  else return 0;
+  // 检查消抖时间是否已过
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    // 如果按键状态与当前消抖状态不同
+    if (reading != debouncedState) {
+      debouncedState = reading;
+      
+      // 只有当状态稳定为LOW时才视为有效按下
+      if (debouncedState == LOW) {
+        Serial.println("按键按下!");
+        return 1;
+        // 这里可以添加按键按下后要执行的操作
+      }
+      else return 0;
+    }
+    else return 0;
   }
+else return 0;
 }
+
 void setup(void)
 {
   Serial.begin(115200);
