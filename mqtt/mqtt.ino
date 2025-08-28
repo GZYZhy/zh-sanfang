@@ -17,7 +17,7 @@ String saved_ssid;
 String saved_password;
 
 // MQTT配置参数 - 在主程序中定义
-const char* DEVICE_ID = "zhsf_2";
+const char* DEVICE_ID = "zhsf_1";
 const char* LIGHT_CONTROL_TOPIC = "zhsf/tally";
 const char* mqtt_user = "esptalk";
 const char* mqtt_password = "zhsanfang";
