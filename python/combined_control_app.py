@@ -22,7 +22,7 @@ RGB_MQTT_PASSWORD = "zhsanfang"
 # 音频监听配置
 AUDIO_MQTT_BROKER = "24.233.0.55"
 AUDIO_MQTT_PORT = 1883
-AUDIO_MQTT_TOPIC = "ESP32_SENDER"
+AUDIO_MQTT_TOPIC = "zhsf/audio"
 AUDIO_MQTT_USERNAME = "esptalk"
 AUDIO_MQTT_PASSWORD = "zhsanfang"
 
@@ -103,7 +103,13 @@ def audio_on_message(client, userdata, msg):
             sys.stdout.write("\033[F")
             print("\r" + str(audio_timeflag) + " " * 10)
             try:
-                audio_stream.write(msg.payload)
+                # 解析带设备ID的音频数据 (格式: "设备ID:音频数据")
+                payload = msg.payload
+                if b':' in payload:
+                    _, audio_data = payload.split(b':', 1)
+                    audio_stream.write(audio_data)
+                else:
+                    audio_stream.write(payload)
             except Exception as e:
                 print(f"处理音频数据错误: {e}")
 
