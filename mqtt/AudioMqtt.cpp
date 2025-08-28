@@ -12,6 +12,8 @@ extern const char* mqtt_password;
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+unsigned long lastAudioReceivedTime = 0;
+
 int min(int a, int b) {
   return (a < b) ? a : b;
 }
@@ -55,15 +57,39 @@ void callback(char* topic, byte* payload, unsigned int length) {
     return;
   }
 
-  // 原有的音频处理逻辑
-  for (int i = 0; i < length; i++)//接收到信息后转换为16bit，补充左右声道，写入到I2S
-  {
-    recive_16bit[i] = (payload[i] - 128) << 5;
-    output_16bit[i * 2 ] = recive_16bit[i];
-    output_16bit[i * 2 + 1] = recive_16bit[i];
+  // 检查是否是音频主题
+  if (strcmp(topic, AUDIO_TOPIC) == 0) {
+    // 检查消息长度是否足够包含设备ID前缀
+    if (length > strlen(DEVICE_ID) + 1) {
+      // 提取消息中的设备ID
+      String message = String((const char*)payload, length);
+      int colonPos = message.indexOf(':');
+      
+      if (colonPos != -1) {
+        String sourceID = message.substring(0, colonPos);
+        
+        // 如果不是自己的消息，才处理音频
+        if (sourceID != String(DEVICE_ID)) {
+          // 提取音频数据（跳过设备ID和冒号）
+          const uint8_t* audioData = payload + colonPos + 1;
+          int audioLength = length - colonPos - 1;
+          
+          // 处理音频数据
+          for (int i = 0; i < audioLength; i++) {
+            recive_16bit[i] = (audioData[i] - 128) << 5;
+            output_16bit[i * 2] = recive_16bit[i];
+            output_16bit[i * 2 + 1] = recive_16bit[i];
+          }
+          
+          I2Swrite(output_16bit, audioLength);
+          lastAudioReceivedTime = millis(); // 更新最后接收时间
+        } else {
+          Serial.println("Ignoring own message");
+        }
+      }
+    }
+    return;
   }
-  
-  I2Swrite(output_16bit,length);
 }
 void reconnect() {
   // Loop until we're reconnected
@@ -74,10 +100,10 @@ void reconnect() {
       Serial.println("connected");
       // Once connected, publish an announcement...
       // ... and resubscribe
-      client.subscribe(LOCALTOPIC,0);
+      client.subscribe(AUDIO_TOPIC,0);
       client.subscribe(LIGHT_CONTROL_TOPIC,0);
       Serial.print("Subscribed to audio topic: ");
-      Serial.println(LOCALTOPIC);
+      Serial.println(AUDIO_TOPIC);
       Serial.print("Subscribed to light control topic: ");
       Serial.println(LIGHT_CONTROL_TOPIC);
     } else {
@@ -91,17 +117,29 @@ void reconnect() {
 }
 void sendData(const uint8_t  *data, uint16_t len)
 {
-  if(MQTT_CONNECTED==client.state())
+  if(client.connected())
   {
-    if(false  == client.publish(PUBTOPIC, data,len,0))
+    // 创建带设备ID前缀的消息缓冲区
+    int totalLength = strlen(DEVICE_ID) + 1 + len; // ID + ":" + audio data
+    uint8_t* message = new uint8_t[totalLength];
+    
+    // 添加设备ID和冒号
+    memcpy(message, DEVICE_ID, strlen(DEVICE_ID));
+    message[strlen(DEVICE_ID)] = ':';
+    
+    // 添加音频数据
+    memcpy(message + strlen(DEVICE_ID) + 1, data, len);
+    
+    // 发布到音频主题
+    if(false == client.publish(AUDIO_TOPIC, message, totalLength, 0))
     {
       Serial.println("sendfailed");
     }
-
+    
+    delete[] message;
   }
   else
   {
     Serial.println("not connect");
   }
-    
 }

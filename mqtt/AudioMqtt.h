@@ -7,18 +7,10 @@
 #include "RGBLight.h"
 
 extern PubSubClient client;
+extern bool recOver;
+extern unsigned long lastAudioReceivedTime;
 
-#if 0
-
-#define LOCALTOPIC "ESP32_SENDER"
-#define PUBTOPIC   "ESP32_RECVER"
-
-#else
-
-#define LOCALTOPIC "ESP32_RECVER"
-#define PUBTOPIC   "ESP32_SENDER"
-
-#endif
+#define AUDIO_TOPIC "zhsf/audio"
 
 extern const char* DEVICE_ID;
 extern const char* LIGHT_CONTROL_TOPIC;
