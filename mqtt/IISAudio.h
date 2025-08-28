@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include <driver/i2s.h>
 
-#define BTN 13
+#define BTN 2
 #define LED 22
 #define SAMPLE_RATE 16000
 
