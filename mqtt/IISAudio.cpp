@@ -29,17 +29,17 @@ const i2s_config_t spk_i2s_config = {
       .dma_buf_len = 256,
 };
 const i2s_pin_config_t rec_pin_config = {
-      .bck_io_num = 4,   // BCKL
-      .ws_io_num = 15,    // LRCL
+      .bck_io_num = 4,   // SCK (Serial Clock)
+      .ws_io_num = 15,    // WS (Word Select/LRCL)
       .data_out_num = -1, // not used (only for speakers)
-      .data_in_num = 13   // DOUT
+      .data_in_num = 13   // SD (Serial Data)
 };
 const i2s_pin_config_t spk_pin_config = {
-      .bck_io_num = 26,
-      .ws_io_num = 22,
-      .data_out_num = 25,
-      .data_in_num = -1   //Not used
-};  
+      .bck_io_num = 26,   // SCK (Serial Clock)
+      .ws_io_num = 19,    // WS (Word Select/LRCL)
+      .data_out_num = 25, // SD (Serial Data)
+      .data_in_num = -1   // Not used
+};
 void I2SInit()
 {
   samples_32bit = (int32_t *)malloc(sizeof(int32_t) * 128);
