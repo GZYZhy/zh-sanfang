@@ -27,7 +27,7 @@ void handleLightControl(const char* payload, unsigned int length) {
   String modeStr = message.substring(colonPos + 1);
   
   // 检查是否是发给本设备的指令
-  if (targetID != DEVICE_ID) return;
+  if (targetID != String(DEVICE_ID)) return;
   
   int mode = modeStr.toInt();
   if (mode >= MODE_OFF && mode <= MODE_RED_BLUE_ALTERNATE) {

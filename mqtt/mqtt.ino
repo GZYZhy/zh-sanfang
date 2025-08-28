@@ -1,12 +1,21 @@
 #include <WiFi.h>
+#include <WiFiManager.h>
 #include <PubSubClient.h>
 #include "AudioMqtt.h"
 #include "IISAudio.h"
 #include "RGBLight.h"
+#include <Preferences.h>
 
-const char* ssid     = "Netcore-9E40DE";//修改为你的WIFI账号与密码
-const char* password = "13400243126ybz";
 const char* mqtt_server = "24.233.0.55";//这是树莓的MQTT服务器地址
+
+// WiFiManager实例
+WiFiManager wm;
+Preferences prefs;
+
+// 存储的WiFi配置
+String saved_ssid;
+String saved_password;
+int device_suffix = 1; // 设备后缀编号1-10
 
 // MQTT配置参数 - 在主程序中定义
 const char* DEVICE_ID = "zhsf_1";
@@ -23,15 +32,103 @@ bool debouncedState = HIGH;  // 消抖后的按键状态
 unsigned long lastDebounceTime = 0;
 
 
-void wifiInit(void)//连接WIFI
+void wifiInit(void)//智能配网连接WIFI
 {
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(500);
-      Serial.print(".");
+    // 初始化Preferences
+    prefs.begin("mqtt_config", false);
+    saved_ssid = prefs.getString("wifi_ssid", "");
+    saved_password = prefs.getString("wifi_password", "");
+    device_suffix = prefs.getInt("device_suffix", 1);
+    prefs.end();
+
+    // 更新设备ID
+    String new_device_id = "zhsf_" + String(device_suffix);
+    DEVICE_ID = new_device_id.c_str();
+    
+    Serial.println("Device ID: " + String(DEVICE_ID));
+    
+    // 确保MQTT使用正确的设备ID
+    if (client.connected()) {
+        client.disconnect();
+        Serial.println("MQTT: Disconnected for ID refresh");
     }
-    Serial.println(WiFi.localIP());
+
+    Serial.println("WiFi: Connecting");
+    
+    // 如果有保存的凭据，先尝试连接
+    if (saved_ssid.length() > 0) {
+        Serial.println("WiFi: Trying saved network");
+        WiFi.mode(WIFI_STA);
+        WiFi.begin(saved_ssid.c_str(), saved_password.c_str());
+        
+        // 等待10秒连接
+        unsigned long startTime = millis();
+        while (WiFi.status() != WL_CONNECTED && millis() - startTime < 10000) {
+            delay(500);
+            Serial.print(".");
+        }
+        
+        if (WiFi.status() == WL_CONNECTED) {
+            Serial.println("\nWiFi: Connected");
+            Serial.println("IP: " + WiFi.localIP().toString());
+            return;
+        }
+        Serial.println("\nWiFi: Saved network failed");
+    }
+
+    // 添加设备后缀选择参数
+    WiFiManagerParameter custom_suffix("suffix", "设备后缀编号 (1-10)", String(device_suffix).c_str(), 2);
+    wm.addParameter(&custom_suffix);
+
+    // 启动配网模式
+    Serial.println("WiFi: Starting config portal");
+    Serial.println("Connect to: ZhangDeSanFang");
+    
+    WiFi.mode(WIFI_AP_STA);
+    wm.setConfigPortalTimeout(180);
+    wm.setAPCallback([](WiFiManager* mgr) {
+        Serial.println("AP: ZhangDeSanFang");
+        Serial.println("Web: 192.168.4.1");
+    });
+    
+    // 启动配置门户
+    if (!wm.startConfigPortal("ZhangDeSanFang")) {
+        Serial.println("WiFi: Config failed, restarting");
+        delay(3000);
+        ESP.restart();
+    } else {
+        Serial.println("WiFi: Connected");
+        Serial.println("IP: " + WiFi.localIP().toString());
+        
+        // 获取用户输入的设备后缀
+        int new_suffix = String(custom_suffix.getValue()).toInt();
+        if (new_suffix >= 1 && new_suffix <= 10) {
+            device_suffix = new_suffix;
+        }
+        
+        // 保存新的配置
+        String newSSID = WiFi.SSID();
+        String newPass = WiFi.psk();
+        
+        prefs.begin("mqtt_config", false);
+        prefs.putString("wifi_ssid", newSSID);
+        prefs.putString("wifi_password", newPass);
+        prefs.putInt("device_suffix", device_suffix);
+        prefs.end();
+        
+        // 更新设备ID
+        String new_device_id = "zhsf_" + String(device_suffix);
+        DEVICE_ID = new_device_id.c_str();
+        
+        Serial.println("Config: Saved");
+        Serial.println("Device ID: " + String(DEVICE_ID));
+        
+        // 强制MQTT重新连接以使用新的设备ID
+        if (client.connected()) {
+            client.disconnect();
+            Serial.println("MQTT: Disconnected for ID change");
+        }
+    }
 }
 bool  BtnisPressed(void)//按键是否按下
 {
@@ -51,7 +148,7 @@ bool  BtnisPressed(void)//按键是否按下
       
       // 只有当状态稳定为LOW时才视为有效按下
       if (debouncedState == LOW) {
-        Serial.println("按键按下!");
+        Serial.println("Btn: Pressed");
         return 1;
         // 这里可以添加按键按下后要执行的操作
       }
@@ -65,20 +162,25 @@ else return 0;
 void setup(void)
 {
   Serial.begin(115200);
+  delay(2000);
+  
+  Serial.println("System: Starting");
+  
   wifiInit();
 
-  I2SInit();//I2S初始化 
-  Serial.println("I2SInit over!");
+  I2SInit();
+  Serial.println("Audio: Ready");
 
-  pinMode(BTN, INPUT_PULLUP);//按键
-  pinMode(LED, OUTPUT);//指示灯
+  pinMode(BTN, INPUT_PULLUP);
+  pinMode(LED, OUTPUT);
   digitalWrite(LED,LOW);
   
-  RGBLightInit(); // 初始化RGB灯
-  Serial.println("RGBLight initialized!");
+  RGBLightInit();
+  Serial.println("RGB: Ready");
   
-  client.setServer(mqtt_server, 1883);//mqtt配置
-  client.setCallback(callback);//绑定回调函数
+  client.setServer(mqtt_server, 1883);
+  client.setCallback(callback);
+  Serial.println("MQTT: Ready");
 }
 
 
