@@ -31,6 +31,9 @@ WiFiClient vmixClient;
 bool connectedToVmix = false;
 const int VMIX_TCP_PORT = 8099;
 
+// Web服务器配置
+WebServer server(80);
+
 bool buttonState;          // 当前按键状态
 bool lastButtonState = HIGH; // 上一次按键状态
 bool debouncedState = HIGH;  // 消抖后的按键状态

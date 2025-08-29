@@ -32,7 +32,7 @@ void handleLightControl(const char* payload, unsigned int length) {
   if (targetID != String(DEVICE_ID)) return;
   
   // 检查是否是查询指令
-  if (modeStr == "now?") {
+  if (modeStr == "n") {
     // 查询当前灯光状态
     LightMode currentMode = getCurrentMode();
     String response = "[re]" + String(DEVICE_ID) + ":" + String(currentMode);
