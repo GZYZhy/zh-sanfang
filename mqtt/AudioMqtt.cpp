@@ -31,6 +31,17 @@ void handleLightControl(const char* payload, unsigned int length) {
   // 检查是否是发给本设备的指令
   if (targetID != String(DEVICE_ID)) return;
   
+  // 检查是否是查询指令
+  if (modeStr == "now?") {
+    // 查询当前灯光状态
+    LightMode currentMode = getCurrentMode();
+    String response = "[re]" + String(DEVICE_ID) + ":" + String(currentMode);
+    client.publish(LIGHT_CONTROL_TOPIC, response.c_str());
+    Serial.print("Query response: ");
+    Serial.println(response);
+    return;
+  }
+  
   int mode = modeStr.toInt();
   if (mode >= MODE_OFF && mode <= MODE_RED_BLUE_ALTERNATE) {
     setLightMode(static_cast<LightMode>(mode));
