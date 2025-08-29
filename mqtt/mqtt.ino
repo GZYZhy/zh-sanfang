@@ -6,6 +6,7 @@
 #include "RGBLight.h"
 #include <Preferences.h>
 #include <WiFiClient.h>
+#include <WebServer.h>
 
 const char* mqtt_server = "24.233.0.55";
 
@@ -243,6 +244,27 @@ void setup(void)
   if (enable_vmix) {
     connectToVmix();
   }
+
+  // 初始化Web服务器（只在配网成功后启用）
+  if (WiFi.status() == WL_CONNECTED) {
+    server.on("/forget", HTTP_GET, []() {
+      // 忘记网络配置并重启进入配网模式
+      prefs.begin("mqtt_config", false);
+      prefs.remove("wifi_ssid");
+      prefs.remove("wifi_password");
+      prefs.end();
+      
+      server.send(200, "text/plain", "OK");
+      delay(1000);
+      ESP.restart();
+    });
+    
+    server.begin();
+    Serial.println("Web server started");
+    Serial.print("Access http://");
+    Serial.print(WiFi.localIP());
+    Serial.println("/forget to reset WiFi config");
+  }
 }
 
 
@@ -252,6 +274,11 @@ bool speakOut;//0代表对外讲话，1代表收听
 
 void loop(void)
 {
+  // 处理Web服务器请求（只在配网成功后启用）
+  if (WiFi.status() == WL_CONNECTED) {
+    server.handleClient();
+  }
+  
   if (!client.connected()) {//判断是否连接
     reconnect();
   }
