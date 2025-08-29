@@ -95,8 +95,9 @@ void wifiInit(void)//智能配网连接WIFI
     wm.addParameter(&p_enable_vmix);
     wm.addParameter(&p_vmix_ip);
     
-    // 启动配置门户
-    if (!wm.startConfigPortal("MQTT-Device")) {
+    // 启动配置门户（使用设备ID作为SSID）
+    String configPortalSSID = "zhsf_" + String(DEVICE_ID);
+    if (!wm.startConfigPortal(configPortalSSID.c_str())) {
         Serial.println("WiFi: Config failed, restarting");
         delay(3000);
         ESP.restart();
