@@ -20,28 +20,67 @@ int min(int a, int b) {
 
 void handleLightControl(const char* payload, unsigned int length) {
   if (length < 3) return; // 最小格式: id:mode
-  
+
   String message = String(payload, length);
   int colonPos = message.indexOf(':');
   if (colonPos == -1) return;
-  
+
   String targetID = message.substring(0, colonPos);
   String modeStr = message.substring(colonPos + 1);
-  
+
   // 检查是否是发给本设备的指令
   if (targetID != String(DEVICE_ID)) return;
-  
+
   // 检查是否是查询指令
   if (modeStr == "n") {
     // 查询当前灯光状态
     LightMode currentMode = getCurrentMode();
     String response = "[re]" + String(DEVICE_ID) + ":" + String(currentMode);
     client.publish(LIGHT_CONTROL_TOPIC, response.c_str());
-    Serial.print("Query response: ");
+    Serial.print("Light query response: ");
     Serial.println(response);
     return;
   }
-  
+
+  // 检查是否是麦克风查询指令
+  if (modeStr == "m") {
+    // 查询当前麦克风状态
+    String status = micEnabled ? "k" : "g"; // k=开麦, g=关麦
+    String response = "[re]" + String(DEVICE_ID) + ":" + status;
+    client.publish(LIGHT_CONTROL_TOPIC, response.c_str());
+    Serial.print("Mic status query response: ");
+    Serial.println(response);
+    return;
+  }
+
+  // 检查是否是麦克风控制指令
+  if (modeStr == "g") {
+    // 关麦指令
+    if (micEnabled) {
+      micEnabled = false;
+      Serial.println("Mic: Turned OFF via MQTT command");
+      // 更新LED状态
+      digitalWrite(LED, HIGH); // 闭麦时LED熄灭
+    } else {
+      Serial.println("Mic: Already OFF, no change");
+    }
+    return;
+  }
+
+  if (modeStr == "k") {
+    // 开麦指令
+    if (!micEnabled) {
+      micEnabled = true;
+      Serial.println("Mic: Turned ON via MQTT command");
+      // 更新LED状态
+      digitalWrite(LED, LOW); // 开麦时LED点亮
+    } else {
+      Serial.println("Mic: Already ON, no change");
+    }
+    return;
+  }
+
+  // 处理灯光控制指令
   int mode = modeStr.toInt();
   if (mode >= MODE_OFF && mode <= MODE_RED_BLUE_ALTERNATE) {
     setLightMode(static_cast<LightMode>(mode));

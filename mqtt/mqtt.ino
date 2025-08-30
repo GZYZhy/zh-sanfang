@@ -34,13 +34,7 @@ const int VMIX_TCP_PORT = 8099;
 // Web服务器配置
 WebServer server(80);
 
-bool buttonState;          // 当前按键状态
-bool lastButtonState = HIGH; // 上一次按键状态
-bool debouncedState = HIGH;  // 消抖后的按键状态
-#define debounceDelay  50// 消抖时间间隔（毫秒）
-
-// 计时变量
-unsigned long lastDebounceTime = 0;
+// 按键相关变量已在后面重新定义
 
 
 void wifiInit(void)//智能配网连接WIFI
@@ -130,39 +124,46 @@ void wifiInit(void)//智能配网连接WIFI
         }
     }
 }
-bool BtnisPressed(void) // 按键是否按下
-{
+// 闭麦键检测函数 - 检测短按事件
+bool checkMuteButtonPress(void) {
+  static bool lastReading = HIGH;
+  static unsigned long pressStartTime = 0;
+  static bool pressDetected = false;
+
   int reading = digitalRead(BTN);
-  
-  // 检查状态是否变化（由于噪声或按下）
-  if (reading != lastButtonState) {
-    // 重置消抖计时器
-    lastDebounceTime = millis();
+
+  // 检测按键按下开始
+  if (reading == LOW && lastReading == HIGH) {
+    pressStartTime = millis();
+    pressDetected = true;
+    Serial.println("Btn: Press detected");
   }
-  
-  // 更新上一次按钮状态
-  lastButtonState = reading;
-  
-  // 检查消抖时间是否已过
-  if ((millis() - lastDebounceTime) > debounceDelay) {
-    // 如果状态稳定了，检查稳定状态是否变化
-    if (reading != debouncedState) {
-      debouncedState = reading;
-      
-      // 当稳定状态变为LOW时，表示按键被按下
-      if (debouncedState == LOW) {
-        Serial.println("Btn: Pressed");
+
+  // 检测按键释放
+  if (reading == HIGH && lastReading == LOW && pressDetected) {
+    unsigned long pressDuration = millis() - pressStartTime;
+
+    // 如果按键时间小于500ms，认为是短按（切换状态）
+    if (pressDuration < 500) {
+      micEnabled = !micEnabled; // 切换麦克风状态
+      Serial.print("Mic ");
+      Serial.println(micEnabled ? "ON (开麦模式)" : "OFF (闭麦模式)");
+
+      // 根据麦克风状态设置LED
+      if (micEnabled) {
+        digitalWrite(LED, LOW); // 开麦时LED常亮（点亮）
+      } else {
+        digitalWrite(LED, HIGH); // 闭麦时LED熄灭
       }
+
+      pressDetected = false;
+      return true; // 返回true表示发生了状态切换
     }
+    pressDetected = false;
   }
-  
-  // 如果稳定状态为LOW，表示按键处于按下状态，返回1
-  if (debouncedState == LOW) {
-    return 1;
-  }
-  
-  // 默认返回0，表示按键未按下
-  return 0;
+
+  lastReading = reading;
+  return false; // 没有状态切换
 }
 
 // vMix连接函数
@@ -276,6 +277,11 @@ void setup(void)
 bool sendOver=1;//发送完成标志位
 bool recOver=0;//接受完成标志位
 
+// 闭麦键状态变量
+bool micEnabled = false; // 麦克风状态：false=闭麦只收听，true=开麦既收听又发送
+bool lastButtonState = HIGH; // 上一次按键状态
+unsigned long lastDebounceTime = 0; // 消抖计时器
+
 void loop(void)
 {
   // 处理Web服务器请求（只在配网成功后启用）
@@ -303,16 +309,32 @@ void loop(void)
   
   updateLight(); // 更新RGB灯状态（处理闪烁等效果）
 
-  // 双工模式：发送和接收可以同时进行
-  if(BtnisPressed())//按下按键发射数据
-  {
-    digitalWrite(LED,LOW);//发射时开灯（常亮优先）
+  // 检查闭麦键按下事件
+  checkMuteButtonPress();
+
+  // 双工模式：根据麦克风状态决定是否发送音频
+  if (micEnabled) {
+    // 麦克风开启：既发送又接收
     int samples_read = I2Sread(samples_16bit,128);//读取数据
     covert_bit(samples_16bit,samples_8bit,samples_read);//发送时转换为8位
     sendData(samples_8bit,samples_read);//发射数据
-  }
-  else
-  {
+
+    // 如果有接收音频，LED闪烁；否则LED常亮（表示麦克风开启）
+    if (millis() - lastAudioReceivedTime < 500) {
+      // 闪烁效果：每100ms切换一次状态
+      static unsigned long lastBlinkTime = 0;
+      static bool ledState = HIGH;
+
+      if (millis() - lastBlinkTime > 100) {
+        ledState = !ledState;
+        digitalWrite(LED, ledState ? HIGH : LOW);
+        lastBlinkTime = millis();
+      }
+    } else {
+      digitalWrite(LED, LOW); // 麦克风开启但无接收音频时，LED常亮（点亮）
+    }
+  } else {
+    // 麦克风关闭：只接收
     // 实时检测音频活动：如果500ms内有音频数据收到，则闪烁LED
     if (millis() - lastAudioReceivedTime < 500) {
       // 闪烁效果：每100ms切换一次状态
@@ -325,7 +347,7 @@ void loop(void)
         lastBlinkTime = millis();
       }
     } else {
-      digitalWrite(LED,HIGH);//没有音频活动，关灯
+      digitalWrite(LED, HIGH); // 麦克风关闭且无音频活动，LED熄灭
     }
   }  
 }
