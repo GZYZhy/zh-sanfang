@@ -9,6 +9,7 @@
 extern PubSubClient client;
 extern bool recOver;
 extern unsigned long lastAudioReceivedTime;
+extern bool micEnabled; // 麦克风状态：false=闭麦，true=开麦
 
 #define AUDIO_TOPIC "zhsf/audio"
 
