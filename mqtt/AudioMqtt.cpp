@@ -59,8 +59,7 @@ void handleLightControl(const char* payload, unsigned int length) {
     if (micEnabled) {
       micEnabled = false;
       Serial.println("Mic: Turned OFF via MQTT command");
-      // 更新LED状态
-      digitalWrite(LED, HIGH); // 闭麦时LED熄灭
+
     } else {
       Serial.println("Mic: Already OFF, no change");
     }
@@ -72,8 +71,7 @@ void handleLightControl(const char* payload, unsigned int length) {
     if (!micEnabled) {
       micEnabled = true;
       Serial.println("Mic: Turned ON via MQTT command");
-      // 更新LED状态
-      digitalWrite(LED, LOW); // 开麦时LED点亮
+      // LED状态由mqtt.ino主循环统一控制
     } else {
       Serial.println("Mic: Already ON, no change");
     }
