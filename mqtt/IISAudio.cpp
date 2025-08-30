@@ -67,8 +67,9 @@ int I2Sread(int16_t *samples, int count)// read from i2s
     {
         count = 128;//最少读取128
     }
-    // 使用10ms超时代替无限等待，避免主循环卡住
-    esp_err_t result = i2s_read(REC_I2S_PORT, (char *)samples_32bit, sizeof(int32_t) * count, &bytes_read, pdMS_TO_TICKS(10));
+    // 使用20ms超时代替无限等待，避免主循环卡住
+    // 16kHz采样率，128样本理论需要8ms，20ms提供充足的安全缓冲
+    esp_err_t result = i2s_read(REC_I2S_PORT, (char *)samples_32bit, sizeof(int32_t) * count, &bytes_read, pdMS_TO_TICKS(20));
 
     if (result != ESP_OK || bytes_read == 0) {
         // 读取失败或超时，返回0表示无数据
@@ -94,5 +95,11 @@ void covert_bit(int16_t *temp_samples_16bit,uint8_t*temp_samples_8bit,uint8_t le
 void I2Swrite(int16_t *samples, int count)//数据写入IIS
 {
     size_t bytes_written;
-    i2s_write(SPK_I2S_PORT, samples, sizeof(uint16_t)*count*2, &bytes_written, portMAX_DELAY); 
+    // 使用20ms超时代替无限等待，避免主循环卡住
+    // 与读取操作保持一致的安全超时策略
+    esp_err_t result = i2s_write(SPK_I2S_PORT, samples, sizeof(uint16_t)*count*2, &bytes_written, pdMS_TO_TICKS(20));
+    if (result != ESP_OK) {
+        // 写入失败时静默处理，避免阻塞主循环
+        // Serial.println("I2S write failed");
+    }
 }
