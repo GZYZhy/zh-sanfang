@@ -272,9 +272,9 @@ void setup(void)
 }
 
 
+// 双工模式变量（发送和接收可以同时进行）
 bool sendOver=1;//发送完成标志位
 bool recOver=0;//接受完成标志位
-bool speakOut;//0代表对外讲话，1代表收听
 
 void loop(void)
 {
@@ -302,10 +302,10 @@ void loop(void)
   }
   
   updateLight(); // 更新RGB灯状态（处理闪烁等效果）
-  
+
+  // 双工模式：发送和接收可以同时进行
   if(BtnisPressed())//按下按键发射数据
   {
-    speakOut=0;
     digitalWrite(LED,LOW);//发射时开灯（常亮优先）
     int samples_read = I2Sread(samples_16bit,128);//读取数据
     covert_bit(samples_16bit,samples_8bit,samples_read);//发送时转换为8位
@@ -313,15 +313,12 @@ void loop(void)
   }
   else
   {
-    delay(28);//经过一段延时再判断，接收数据并且播放也需要时间
-    speakOut=1;
-    
     // 实时检测音频活动：如果500ms内有音频数据收到，则闪烁LED
     if (millis() - lastAudioReceivedTime < 500) {
       // 闪烁效果：每100ms切换一次状态
       static unsigned long lastBlinkTime = 0;
       static bool ledState = HIGH;
-      
+
       if (millis() - lastBlinkTime > 100) {
         ledState = !ledState;
         digitalWrite(LED, ledState ? HIGH : LOW);
@@ -330,7 +327,5 @@ void loop(void)
     } else {
       digitalWrite(LED,HIGH);//没有音频活动，关灯
     }
-    
-    i2s_zero_dma_buffer(SPK_I2S_PORT);//清空DMA中缓存的数据
   }  
 }
