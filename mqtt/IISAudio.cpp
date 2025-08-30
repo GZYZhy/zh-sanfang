@@ -1,4 +1,6 @@
 #include "IISAudio.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 int32_t *samples_32bit;//读出来的原始32位数据，长度128
 int16_t *samples_16bit;//转换后的16位数据，长度128
@@ -65,7 +67,14 @@ int I2Sread(int16_t *samples, int count)// read from i2s
     {
         count = 128;//最少读取128
     }
-    i2s_read(REC_I2S_PORT, (char *)samples_32bit, sizeof(int32_t) * count, &bytes_read, portMAX_DELAY);
+    // 使用10ms超时代替无限等待，避免主循环卡住
+    esp_err_t result = i2s_read(REC_I2S_PORT, (char *)samples_32bit, sizeof(int32_t) * count, &bytes_read, pdMS_TO_TICKS(10));
+
+    if (result != ESP_OK || bytes_read == 0) {
+        // 读取失败或超时，返回0表示无数据
+        return 0;
+    }
+
     int samples_read = bytes_read / sizeof(int32_t);
     for (int i = 0; i < samples_read; i++)
     {

@@ -316,8 +316,12 @@ void loop(void)
   if (micEnabled) {
     // 麦克风开启：既发送又接收
     int samples_read = I2Sread(samples_16bit,128);//读取数据
-    covert_bit(samples_16bit,samples_8bit,samples_read);//发送时转换为8位
-    sendData(samples_8bit,samples_read);//发射数据
+
+    // 只有在成功读取到数据时才发送
+    if (samples_read > 0) {
+      covert_bit(samples_16bit,samples_8bit,samples_read);//发送时转换为8位
+      sendData(samples_8bit,samples_read);//发射数据
+    }
 
     // 如果有接收音频，LED闪烁；否则LED常亮（表示麦克风开启）
     if (millis() - lastAudioReceivedTime < 500) {
