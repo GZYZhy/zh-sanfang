@@ -23,5 +23,6 @@ void callback(char* topic, byte* payload, unsigned int length);
 void reconnect() ;
 void sendData(const uint8_t  *data, uint16_t len);
 void handleLightControl(const char* payload, unsigned int length);
+void saveVolumeSetting(int volume);
 
 #endif
