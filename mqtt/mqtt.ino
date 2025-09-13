@@ -31,6 +31,9 @@ WiFiClient vmixClient;
 bool connectedToVmix = false;
 const int VMIX_TCP_PORT = 8099;
 
+// 音量配置
+int output_volume = 10; // 默认10%，范围0-100
+
 // Web服务器配置
 WebServer server(80);
 
@@ -45,12 +48,14 @@ void wifiInit(void)//智能配网连接WIFI
     saved_password = prefs.getString("wifi_password", "");
     enable_vmix = prefs.getBool("enable_vmix", false);
     vmix_ip = prefs.getString("vmix_ip", "");
+    output_volume = prefs.getInt("output_volume", 10); // 默认10%
     prefs.end();
     
     Serial.println("vMix config: " + String(enable_vmix ? "Enabled" : "Disabled"));
     if (enable_vmix) {
         Serial.println("vMix IP: " + vmix_ip);
     }
+    Serial.println("Output volume: " + String(output_volume) + "%");
 
     Serial.println("WiFi: Connecting");
     
@@ -88,6 +93,10 @@ void wifiInit(void)//智能配网连接WIFI
     WiFiManagerParameter p_vmix_ip("vmix_ip", "vMix IP", "", 40);
     wm.addParameter(&p_enable_vmix);
     wm.addParameter(&p_vmix_ip);
+
+    // 添加音量配置参数
+    WiFiManagerParameter p_output_volume("output_volume", "Output Volume % (0-100)", String(output_volume).c_str(), 3);
+    wm.addParameter(&p_output_volume);
     
     // 启动配置门户（使用设备ID作为SSID）
     String configPortalSSID = "zhsf_" + String(DEVICE_ID);
@@ -104,24 +113,33 @@ void wifiInit(void)//智能配网连接WIFI
         String newPass = WiFi.psk();
         String newEnableVmix = String(p_enable_vmix.getValue());
         String newVmixIp = String(p_vmix_ip.getValue());
+        String newOutputVolume = String(p_output_volume.getValue());
         newVmixIp.trim();
+        newOutputVolume.trim();
         
         prefs.begin("mqtt_config", false);
         prefs.putString("wifi_ssid", newSSID);
         prefs.putString("wifi_password", newPass);
         prefs.putBool("enable_vmix", newEnableVmix == "1");
         prefs.putString("vmix_ip", newVmixIp);
+        prefs.putInt("output_volume", newOutputVolume.toInt());
         prefs.end();
         
         // 更新运行时变量
         enable_vmix = (newEnableVmix == "1");
         vmix_ip = newVmixIp;
+        output_volume = newOutputVolume.toInt();
+
+        // 限制音量范围在0-100之间
+        if (output_volume < 0) output_volume = 0;
+        if (output_volume > 100) output_volume = 100;
         
         Serial.println("Config: Saved");
         Serial.println("vMix: " + String(enable_vmix ? "Enabled" : "Disabled"));
         if (enable_vmix) {
             Serial.println("vMix IP: " + vmix_ip);
         }
+        Serial.println("Output volume: " + String(output_volume) + "%");
     }
 }
 // 闭麦键检测函数 - 检测短按事件

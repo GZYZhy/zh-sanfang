@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <string.h>
+#include <limits.h>
 
 extern const char* DEVICE_ID;
 extern const char* LIGHT_CONTROL_TOPIC;
@@ -125,8 +126,16 @@ void callback(char* topic, byte* payload, unsigned int length) {
           // 处理音频数据
           for (int i = 0; i < audioLength; i++) {
             recive_16bit[i] = (audioData[i] - 128) << 5;
-            output_16bit[i * 2] = recive_16bit[i];
-            output_16bit[i * 2 + 1] = recive_16bit[i];
+
+            // 应用音量缩放（只影响扬声器输出，不影响麦克风输入）
+            int16_t scaled_sample = recive_16bit[i] * output_volume / 100;
+
+            // 确保不会溢出16位范围
+            if (scaled_sample > INT16_MAX) scaled_sample = INT16_MAX;
+            if (scaled_sample < INT16_MIN) scaled_sample = INT16_MIN;
+
+            output_16bit[i * 2] = scaled_sample;
+            output_16bit[i * 2 + 1] = scaled_sample;
           }
           
           I2Swrite(output_16bit, audioLength);
