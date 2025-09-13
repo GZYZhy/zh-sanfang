@@ -33,8 +33,8 @@
         <h1>综合控制台</h1>
         
         <div class="nav">
-            <a href="/ctrl/tally">RGB灯控制</a>
-            <a href="/ctrl/listen">音频监听</a>
+            <a href="/zh s f/tally">RGB灯控制</a>
+            <a href="/zhsf/listen">音频监听</a>
         </div>
 
         <div class="section">
@@ -92,7 +92,7 @@
             statusDiv.textContent = '发送中...';
             
             try {
-                const response = await fetch('/ctrl/api/rgb/control', {
+                const response = await fetch('/zhsf/api/rgb/control', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

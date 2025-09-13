@@ -460,56 +460,38 @@ def audio_on_connect(client, userdata, flags, rc):
 def audio_on_message(client, userdata, msg):
     """音频MQTT消息回调"""
     global audio_timeflag
-
-    # 只处理音频数据，响应消息由独立的设备状态监控客户端处理
-    if msg.topic == AUDIO_MQTT_TOPIC:
-        with audio_lock:
-            # 再次检查监听状态和音频流，避免在停止过程中处理新数据
-            if audio_listening and audio_stream and audio_stream.is_active():
-                audio_timeflag += 1
-                sys.stdout.write("\033[F")
-                print("\r" + str(audio_timeflag) + " " * 10)
-                try:
-                    # 解析带设备ID的音频数据 (格式: "设备ID:音频数据")
-                    payload = msg.payload
-                    if b':' in payload:
-                        _, audio_data = payload.split(b':', 1)
-                        # 确保音频流仍然有效
-                        if audio_stream and audio_stream.is_active():
-                            audio_stream.write(audio_data)
-                    else:
-                        # 确保音频流仍然有效
-                        if audio_stream and audio_stream.is_active():
-                            audio_stream.write(payload)
-                except Exception as e:
-                    print(f"处理音频数据错误: {e}")
-            else:
-                # 如果不在监听状态，忽略音频数据
-                pass
+    with audio_lock:
+        if audio_listening and audio_stream and msg.topic == AUDIO_MQTT_TOPIC:
+            audio_timeflag += 1
+            sys.stdout.write("\033[F")
+            print("\r" + str(audio_timeflag) + " " * 10)
+            try:
+                # 解析带设备ID的音频数据 (格式: "设备ID:音频数据")
+                payload = msg.payload
+                if b':' in payload:
+                    _, audio_data = payload.split(b':', 1)
+                    audio_stream.write(audio_data)
+                else:
+                    audio_stream.write(payload)
+            except Exception as e:
+                print(f"处理音频数据错误: {e}")
 
 def start_audio_listening():
     """开始音频监听"""
     global audio_client, audio_stream, p_audio, audio_listening
 
     with audio_lock:
-        # 首先检查是否已经在监听中
         if audio_listening:
             return {'status': 'info', 'message': '已经在监听中'}
 
-        # 确保所有资源都被清理
-        cleanup_audio_resources()
-
         try:
-            print("🎵 初始化PyAudio...")
-            # 初始化音频 - PyAudio
+            # 初始化音频
             p_audio = pyaudio.PyAudio()
             audio_stream = p_audio.open(format=p_audio.get_format_from_width(1),
                                       channels=1, rate=16000, output=True)
-            print("🎵 PyAudio初始化成功")
 
-            print("📡 初始化MQTT客户端...")
             # 初始化MQTT客户端
-            client_id = f"audio_listener_{int(time.time())}"
+            client_id = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
             audio_client = mqtt.Client(client_id)
             audio_client.on_connect = audio_on_connect
             audio_client.on_message = audio_on_message
@@ -517,17 +499,19 @@ def start_audio_listening():
 
             audio_client.connect(AUDIO_MQTT_BROKER, AUDIO_MQTT_PORT, 15)
             audio_client.loop_start()
-            print("📡 MQTT客户端初始化成功")
 
             audio_listening = True
             audio_timeflag = 0
-            print("✅ 音频监听已启动")
             return {'status': 'success', 'message': '开始监听音频'}
 
         except Exception as e:
-            print(f"❌ 启动音频监听失败: {e}")
-            # 确保清理所有资源
-            cleanup_audio_resources()
+            print(f"启动音频监听失败: {e}")
+            if audio_stream:
+                audio_stream.close()
+                audio_stream = None
+            if p_audio:
+                p_audio.terminate()
+                p_audio = None
             return {'status': 'error', 'message': f'启动监听失败: {e}'}
 
 def cleanup_audio_resources():
