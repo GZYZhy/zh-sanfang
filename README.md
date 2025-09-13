@@ -161,14 +161,101 @@
 访问Web：`http://设备IP/forget`
 
 
+## 控制台使用指南
+
+### 启动控制台
+```bash
+cd python/
+python combined_control_app.py
+```
+
+### 访问地址
+- 主控制台: `http://localhost:5120/` (自动重定向到 `/zhsf`)
+- 统一控制台: `http://localhost:5120/zhsf`
+
+### 功能说明
+
+#### 🎵 音频监听
+- 支持实时接收ESP32设备发送的音频数据
+- 显示接收到的数据包数量
+- 支持开始/停止监听
+
+#### 💡 RGB灯控制
+- 支持7种灯控模式（关闭、绿色常亮、黄色闪烁等）
+- 支持单个设备和批量控制
+- 实时状态反馈
+
+#### 🎤 麦克风控制
+- 查询麦克风状态（开麦/静音）
+- 远程控制麦克风开关
+- 支持批量操作
+
+#### 🔊 音量控制
+- 查询当前音量设置（0-100%）
+- 远程设置扬声器音量
+- 支持批量音量调节
+
+#### 📊 设备状态查询
+- 查询单个设备完整状态
+- 批量查询所有设备状态
+- 实时在线状态监控
+
+#### ⚡ 批量控制
+- 支持多设备同时操作
+- 可选择不同的控制类型（RGB、麦克风、音量）
+- 批量执行结果反馈
+
+#### 📈 系统状态监控
+- 实时显示系统运行状态
+- 自动刷新（每5秒更新）
+- 显示设备在线状态统计
+
 ## 开发信息
 
 ### 项目结构
 ```
 mqtt/           - ESP32固件源码
-python/         - 测试工具和模拟器
-ctrl/           - 控制界面文件
+python/
+  ├── combined_control_app.py    - 综合控制应用（主要程序）
+  ├── templates/
+  │   ├── dashboard.html         - 主控制台界面
+  │   └── audio_control.html     - 音频控制界面（兼容）
+  └── vmix_simulator.py          - vMix模拟器
+ctrl/           - 控制界面文件（已迁移到python/templates/）
 ```
+
+### API接口文档
+
+#### RGB灯控制
+- `POST /zhsf/api/rgb/control` - 发送RGB控制指令
+- `GET /zhsf/api/rgb/modes` - 获取RGB模式列表
+- `GET /zhsf/api/rgb/history` - 获取控制历史
+- `GET /zhsf/api/rgb/status` - 获取当前RGB状
+
+#### 麦克风控制
+- `GET /zhsf/api/microphone/{device}/query` - 查询麦克风状态
+- `POST /zhsf/api/microphone/{device}/control` - 控制麦克风开关
+
+#### 音量控制
+- `GET /zhsf/api/volume/{device}/query` - 查询音量状态
+- `POST /zhsf/api/volume/{device}/set` - 设置音量
+
+#### 设备管理
+- `GET /zhsf/api/devices` - 获取设备列表
+- `GET /zhsf/api/devices/status` - 获取所有设备状态
+- `GET /zhsf/api/devices/{device}/status` - 获取单个设备状态
+
+#### 音频监听
+- `POST /zhsf/api/audio/start` - 开始音频监听
+- `POST /zhsf/api/audio/stop` - 停止音频监听
+- `GET /zhsf/api/audio/status` - 获取音频状态
+
+#### 批量控制
+- `POST /zhsf/api/batch/control` - 批量控制多个设备
+- `POST /zhsf/api/control/{device}` - 综合控制单个设备
+
+#### 系统状态
+- `GET /zhsf/api/system/status` - 获取系统整体状态
 
 ### 编译说明
 1. 使用PlatformIO或Arduino IDE编译

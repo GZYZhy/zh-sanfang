@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>张de三方 - 综合控制台</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #2c3e50; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .card { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .control-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, button, input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #3498db; color: white; cursor: pointer; }
+        button:hover { background: #2980b9; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 张de三方 - 综合控制台</h1>
+            <p>影视导播指挥系统</p>
+        </div>
+
+        <!-- 系统状态概览 -->
+        <div class="card" style="grid-column: 1 / -1; margin-bottom: 20px;">
+            <h3>📈 系统状态概览</h3>
+            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px;">
+                <div style="text-align: center;">
+                    <div style="font-size: 2em; color: #3498db;">🎵</div>
+                    <div id="systemAudioStatus">音频: 未监听</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2em; color: #e74c3c;">📦</div>
+                    <div id="systemPackets">数据包: 0</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2em; color: #27ae60;">📱</div>
+                    <div id="systemDevices">设备: 3个</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2em; color: #f39c12;">⏰</div>
+                    <div id="systemTime">时间: --:--:--</div>
+                </div>
+            </div>
+            <button onclick="refreshSystemStatus()" style="margin-top: 15px;">🔄 刷新状态</button>
+        </div>
+
+        <div class="grid">
+            <!-- RGB灯控制 -->
+            <div class="card">
+                <h3>💡 RGB灯控制</h3>
+                <div class="control-group">
+                    <label>设备:</label>
+                    <select id="rgbDevice">
+                        <option value="zhsf_1">zhsf_1</option>
+                        <option value="zhsf_2">zhsf_2</option>
+                        <option value="zhsf_3">zhsf_3</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>模式:</label>
+                    <select id="rgbMode">
+                        <option value="0">关闭</option>
+                        <option value="1" selected>绿色常亮</option>
+                        <option value="2">黄色闪烁</option>
+                        <option value="3">黄色常亮</option>
+                        <option value="4">红色闪烁</option>
+                        <option value="5">红色常亮</option>
+                        <option value="6">红蓝交替</option>
+                    </select>
+                </div>
+                <button onclick="sendRGBControl()">发送控制</button>
+                <div id="rgbStatus" class="status hidden"></div>
+            </div>
+
+            <!-- 麦克风控制 -->
+            <div class="card">
+                <h3>🎤 麦克风控制</h3>
+            <div class="control-group">
+                    <label>设备:</label>
+                    <select id="micDevice">
+                    <option value="zhsf_1">zhsf_1</option>
+                    <option value="zhsf_2">zhsf_2</option>
+                    <option value="zhsf_3">zhsf_3</option>
+                </select>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="controlMic('mute')">静音</button>
+                    <button onclick="controlMic('unmute')">开麦</button>
+                    <button onclick="queryMic()">查询状态</button>
+                </div>
+                <div id="micStatus" class="status hidden"></div>
+            </div>
+
+            <!-- 音量控制 -->
+            <div class="card">
+                <h3>🔊 音量控制</h3>
+                <div class="control-group">
+                    <label>设备:</label>
+                    <select id="volDevice">
+                        <option value="zhsf_1">zhsf_1</option>
+                        <option value="zhsf_2">zhsf_2</option>
+                        <option value="zhsf_3">zhsf_3</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>音量 (0-100):</label>
+                    <input type="number" id="volume" min="0" max="100" value="10">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="setVolume()">设置音量</button>
+                    <button onclick="queryVolume()">查询音量</button>
+                </div>
+                <div id="volStatus" class="status hidden"></div>
+            </div>
+
+            <!-- 音频监听 -->
+            <div class="card">
+                <h3>📻 音频监听</h3>
+                <div style="text-align: center;">
+                    <div id="audioStatus">状态: 未监听<br>包数: 0</div>
+                    <br>
+                    <button id="audioBtn" onclick="toggleAudio()">开始监听</button>
+                </div>
+                <div id="audioControlStatus" class="status hidden"></div>
+            </div>
+
+            <!-- 设备状态 -->
+            <div class="card">
+                <h3>📊 设备状态</h3>
+            <div class="control-group">
+                    <label>设备:</label>
+                    <select id="statusDevice">
+                        <option value="zhsf_1">zhsf_1</option>
+                        <option value="zhsf_2">zhsf_2</option>
+                        <option value="zhsf_3">zhsf_3</option>
+                </select>
+                </div>
+                <button onclick="queryDeviceStatus()">查询设备状态</button>
+                <button onclick="queryAllDevices()" style="margin-left: 10px;">查询所有设备</button>
+                <div id="deviceStatus" class="status hidden"></div>
+            </div>
+
+            <!-- 批量控制 -->
+            <div class="card">
+                <h3>⚡ 批量控制</h3>
+                <div class="control-group">
+                    <label>选择设备:</label>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <label><input type="checkbox" id="batch_zhsf_1" checked> zhsf_1</label>
+                        <label><input type="checkbox" id="batch_zhsf_2" checked> zhsf_2</label>
+                        <label><input type="checkbox" id="batch_zhsf_3" checked> zhsf_3</label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>操作类型:</label>
+                    <select id="batchAction">
+                        <option value="rgb">设置RGB灯模式</option>
+                        <option value="microphone">控制麦克风</option>
+                        <option value="volume">设置音量</option>
+                    </select>
+        </div>
+
+                <div id="batchParams">
+                    <!-- 参数将通过JavaScript动态生成 -->
+    </div>
+
+                <button onclick="executeBatchControl()" style="width: 100%; margin-top: 15px;">执行批量控制</button>
+                <div id="batchStatus" class="status hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // RGB控制
+        async function sendRGBControl() {
+            const device = document.getElementById('rgbDevice').value;
+            const mode = document.getElementById('rgbMode').value;
+            
+            showStatus('rgbStatus', '发送中...', 'info');
+            
+            try {
+                const response = await fetch('/zhsf/api/rgb/control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device, mode })
+                });
+                
+                const result = await response.json();
+                showStatus('rgbStatus', result.message, result.status === 'success' ? 'success' : 'error');
+            } catch (error) {
+                showStatus('rgbStatus', '网络错误: ' + error.message, 'error');
+            }
+        }
+
+        // 麦克风控制
+        async function controlMic(action) {
+            const device = document.getElementById('micDevice').value;
+
+            showStatus('micStatus', '操作中...', 'info');
+
+            try {
+                const response = await fetch(`/zhsf/api/microphone/${device}/control`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action })
+                });
+
+                const result = await response.json();
+                showStatus('micStatus', result.message, result.status === 'success' ? 'success' : 'error');
+            } catch (error) {
+                showStatus('micStatus', '网络错误: ' + error.message, 'error');
+            }
+        }
+
+        async function queryMic() {
+            const device = document.getElementById('micDevice').value;
+
+            showStatus('micStatus', '查询中...', 'info');
+
+            try {
+                const response = await fetch(`/zhsf/api/microphone/${device}/query`);
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    const status = result.response === 'g' ? '静音' : result.response === 'k' ? '开麦' : '未知';
+                    showStatus('micStatus', `状态: ${status}`, 'success');
+                } else {
+                    showStatus('micStatus', result.message, 'error');
+                }
+            } catch (error) {
+                showStatus('micStatus', '网络错误: ' + error.message, 'error');
+            }
+        }
+
+        // 音量控制
+        async function setVolume() {
+            const device = document.getElementById('volDevice').value;
+            const volume = document.getElementById('volume').value;
+
+            showStatus('volStatus', '设置中...', 'info');
+
+            try {
+                const response = await fetch(`/zhsf/api/volume/${device}/set`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ volume: parseInt(volume) })
+                });
+
+                const result = await response.json();
+                showStatus('volStatus', result.message, result.status === 'success' ? 'success' : 'error');
+            } catch (error) {
+                showStatus('volStatus', '网络错误: ' + error.message, 'error');
+            }
+        }
+
+        async function queryVolume() {
+            const device = document.getElementById('volDevice').value;
+
+            showStatus('volStatus', '查询中...', 'info');
+
+            try {
+                const response = await fetch(`/zhsf/api/volume/${device}/query`);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    const vol = result.response.replace('v', '');
+                    document.getElementById('volume').value = vol;
+                    showStatus('volStatus', `音量: ${vol}%`, 'success');
+                } else {
+                    showStatus('volStatus', result.message, 'error');
+                }
+            } catch (error) {
+                showStatus('volStatus', '网络错误: ' + error.message, 'error');
+            }
+        }
+
+        // 音频监听
+        let audioListening = false;
+        let statusInterval = null;
+
+        async function toggleAudio() {
+            const btn = document.getElementById('audioBtn');
+            const url = audioListening ? '/zhsf/api/audio/stop' : '/zhsf/api/audio/start';
+
+            showStatus('audioControlStatus', '操作中...', 'info');
+
+            try {
+                const response = await fetch(url, { method: 'POST' });
+                const data = await response.json();
+
+                if (data.message.includes('开始') || data.message.includes('启动')) {
+                    audioListening = true;
+                    btn.textContent = '停止监听';
+                    btn.style.background = '#e74c3c';
+                    if (!statusInterval) {
+                        statusInterval = setInterval(updateAudioStatus, 1000);
+                    }
+                } else {
+                    audioListening = false;
+                    btn.textContent = '开始监听';
+                    btn.style.background = '#3498db';
+                    if (statusInterval) {
+                        clearInterval(statusInterval);
+                        statusInterval = null;
+                    }
+                }
+
+                showStatus('audioControlStatus', data.message, 'success');
+            } catch (error) {
+                showStatus('audioControlStatus', '操作失败: ' + error.message, 'error');
+            }
+        }
+
+        async function updateAudioStatus() {
+            try {
+                const response = await fetch('/zhsf/api/audio/status');
+                const data = await response.json();
+
+                audioListening = data.listening;
+                const statusDiv = document.getElementById('audioStatus');
+                statusDiv.innerHTML = `状态: ${data.listening ? '监听中' : '未监听'}<br>包数: ${data.count}`;
+
+                const btn = document.getElementById('audioBtn');
+                if (data.listening) {
+                    btn.textContent = '停止监听';
+                    btn.style.background = '#e74c3c';
+                } else {
+                    btn.textContent = '开始监听';
+                    btn.style.background = '#3498db';
+                }
+            } catch (error) {
+                console.error('更新音频状态失败:', error);
+            }
+        }
+
+        // 设备状态查询
+        async function queryDeviceStatus() {
+            const device = document.getElementById('statusDevice').value;
+
+            showStatus('deviceStatus', '查询中...', 'info');
+
+            try {
+                const response = await fetch(`/zhsf/api/devices/${device}/status`);
+                const data = await response.json();
+
+                const rgbMode = data.status.response || '未知';
+                const micStatus = data.microphone.response === 'g' ? '静音' : data.microphone.response === 'k' ? '开麦' : '未知';
+                const volume = data.volume.response ? data.volume.response.replace('v', '') + '%' : '未知';
+
+                showStatus('deviceStatus',
+                    `RGB: ${rgbMode}<br>麦克风: ${micStatus}<br>音量: ${volume}`,
+                    'success');
+            } catch (error) {
+                showStatus('deviceStatus', '查询失败: ' + error.message, 'error');
+            }
+        }
+
+        // 查询所有设备状态
+        async function queryAllDevices() {
+            showStatus('deviceStatus', '查询所有设备中...', 'info');
+
+            try {
+                const response = await fetch('/zhsf/api/devices/status');
+                const data = await response.json();
+
+                let result = '';
+                for (const [deviceId, deviceData] of Object.entries(data)) {
+                    const rgbMode = deviceData.status?.response || '未知';
+                    const micStatus = deviceData.microphone?.response === 'g' ? '静音' : deviceData.microphone?.response === 'k' ? '开麦' : '未知';
+                    const volume = deviceData.volume?.response ? deviceData.volume.response.replace('v', '') + '%' : '未知';
+
+                    result += `${deviceId}: RGB=${rgbMode}, 麦克风=${micStatus}, 音量=${volume}<br>`;
+                }
+
+                showStatus('deviceStatus', result, 'success');
+            } catch (error) {
+                showStatus('deviceStatus', '查询失败: ' + error.message, 'error');
+            }
+        }
+
+        // 批量控制
+        function updateBatchParams() {
+            const action = document.getElementById('batchAction').value;
+            const paramsDiv = document.getElementById('batchParams');
+
+            if (action === 'rgb') {
+                paramsDiv.innerHTML = `
+                    <label>RGB模式:</label>
+                    <select id="batchRgbMode">
+                        <option value="0">关闭</option>
+                        <option value="1" selected>绿色常亮</option>
+                        <option value="2">黄色闪烁</option>
+                        <option value="3">黄色常亮</option>
+                        <option value="4">红色闪烁</option>
+                        <option value="5">红色常亮</option>
+                        <option value="6">红蓝交替</option>
+                    </select>
+                `;
+            } else if (action === 'microphone') {
+                paramsDiv.innerHTML = `
+                    <label>麦克风操作:</label>
+                    <select id="batchMicAction">
+                        <option value="mute">静音</option>
+                        <option value="unmute">开麦</option>
+                    </select>
+                `;
+            } else if (action === 'volume') {
+                paramsDiv.innerHTML = `
+                    <label>音量设置:</label>
+                    <input type="number" id="batchVolume" min="0" max="100" value="10">%
+                `;
+            }
+        }
+
+        async function executeBatchControl() {
+            const selectedDevices = [];
+            ['zhsf_1', 'zhsf_2', 'zhsf_3'].forEach(id => {
+                if (document.getElementById(`batch_${id}`).checked) {
+                    selectedDevices.push(id);
+                }
+            });
+
+            if (selectedDevices.length === 0) {
+                showStatus('batchStatus', '请选择至少一个设备', 'error');
+                setTimeout(() => hideStatus('batchStatus'), 3000);
+                return;
+            }
+
+            const action = document.getElementById('batchAction').value;
+            let params = {};
+
+            if (action === 'rgb') {
+                params.rgb_mode = document.getElementById('batchRgbMode').value;
+            } else if (action === 'microphone') {
+                params.microphone = document.getElementById('batchMicAction').value;
+            } else if (action === 'volume') {
+                params.volume = document.getElementById('batchVolume').value;
+            }
+
+            showStatus('batchStatus', '批量执行中...', 'info');
+
+            const results = [];
+            for (const deviceId of selectedDevices) {
+                try {
+                    const response = await fetch(`/zhsf/api/control/${deviceId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ actions: params })
+                    });
+
+                    const result = await response.json();
+                    const actionName = action === 'rgb' ? 'RGB' : action === 'microphone' ? '麦克风' : '音量';
+                    const status = result[action]?.status === 'success' ? '成功' : '失败';
+                    results.push(`${deviceId}(${actionName}): ${status}`);
+                } catch (error) {
+                    results.push(`${deviceId}: 失败 - ${error.message}`);
+                }
+            }
+
+            showStatus('batchStatus', '批量操作完成:\n' + results.join('\n'), 'success');
+            setTimeout(() => hideStatus('batchStatus'), 5000);
+        }
+
+        // 工具函数
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = message;
+            element.className = `status ${type}`;
+            element.classList.remove('hidden');
+            setTimeout(() => element.classList.add('hidden'), 3000);
+        }
+
+        // 系统状态更新
+        let systemStatusInterval = null;
+
+        async function refreshSystemStatus() {
+            try {
+                const response = await fetch('/zhsf/api/system/status');
+                const data = await response.json();
+
+                // 更新音频状态
+                document.getElementById('systemAudioStatus').textContent =
+                    `音频: ${data.audio.listening ? '监听中' : '未监听'}`;
+
+                // 更新数据包数量
+                document.getElementById('systemPackets').textContent =
+                    `数据包: ${data.audio.packets_received}`;
+
+                // 更新设备数量和在线状态
+                const onlineDevices = Object.values(data.devices).filter(d => d.online).length;
+                document.getElementById('systemDevices').textContent =
+                    `设备: ${onlineDevices}/${Object.keys(data.devices).length} 在线`;
+
+                // 更新时间戳
+                document.getElementById('systemTime').textContent =
+                    `更新: ${data.timestamp.split(' ')[1]}`;
+
+                console.log('系统状态已更新:', data);
+            } catch (error) {
+                console.error('系统状态更新失败:', error);
+            }
+        }
+
+        // 开始自动状态更新
+        function startSystemStatusUpdates() {
+            refreshSystemStatus(); // 立即更新一次
+            if (!systemStatusInterval) {
+                systemStatusInterval = setInterval(refreshSystemStatus, 5000); // 每5秒更新一次
+            }
+        }
+
+        // 停止自动状态更新
+        function stopSystemStatusUpdates() {
+            if (systemStatusInterval) {
+                clearInterval(systemStatusInterval);
+                systemStatusInterval = null;
+            }
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateAudioStatus();
+            updateBatchParams();
+            startSystemStatusUpdates();
+
+            // 批量控制操作类型变更事件
+            document.getElementById('batchAction').addEventListener('change', updateBatchParams);
+        });
+
+        // 页面卸载时清理定时器
+        window.addEventListener('beforeunload', function() {
+            stopSystemStatusUpdates();
+            if (statusInterval) {
+                clearInterval(statusInterval);
+            }
+        });
+    </script>
+</body>
+</html>
